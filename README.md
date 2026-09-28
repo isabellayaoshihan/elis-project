@@ -1,4 +1,4 @@
 # elis-project
 IS 477 course project
 
-Project contributor: Eric Shi, Lyric Li, Isabella Yao，Susu Tran
+Project contributor: Eric Shi, Zehui Li, Isabella Yao，Susu Tran
