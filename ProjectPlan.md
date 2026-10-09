@@ -1,19 +1,22 @@
 # Project Plan
 
 ## Overview
+Lyric
 
 ## Team
 | Member | GitHub | Role | Planned responsibilities |
 |---|---|---|---|
-| Isabella Yao | @isabellayaoshihan | [Role] | [Responsibilities] |
-| Lyric Li | @ZehuiLi123 | [Role] | [Responsibilities] |
-| Eric Shi | @HongyouEric | [Role] | [Responsibilities] |
-| Susu Tran | @susutran| [Role] | [Responsibilities] |
+| Isabella Yao | @isabellayaoshihan | [Role] | Datasets |
+| Lyric Li | @ZehuiLi123 | [Role] | Overview|
+| Eric Shi | @HongyouEric | [Role] | Constrains, Gaps |
+| Susu Tran | @susutran| [Role] | Research Questions  |
 
 
 ## Research Questions
+Susu
 
 ## Datasets
+Isabella
 
 ## Timeline
 | # | Task | Description | Owner | Target date [TBD] | Module |
@@ -37,5 +40,7 @@
 | 17 | Reproducibility test | Fresh clone, clean install, full workflow run | | Dec 5 | M14 |
 | 18 | Final report and release | Complete README.md and publish the final-project release | All | Dec 7 | |
 ## Constraints
+Eric
 
 ## Gaps
+Eric
