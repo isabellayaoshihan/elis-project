@@ -17,8 +17,69 @@ All members contribute to each milestone report and commit their own work, so in
 ## Research Questions
 Susu
 
+
 ## Datasets
-Isabella
+
+The project will integrate three public U.S. government datasets at the county level. The datasets provide complementary demographic, labor-market, and economic information. County FIPS codes will be used as the primary geographic identifier for integration.
+
+### 1. American Community Survey (ACS) 5-Year Estimates
+
+- **Source:** U.S. Census Bureau
+- **Dataset:** 2024 ACS 5-Year Detailed Tables
+- **Geographic level:** County
+- **Acquisition method:** Census Data API
+- **Raw data location:** `data/raw/`
+
+The ACS dataset provides demographic and socioeconomic characteristics for U.S. counties. The project uses variables from several detailed tables, including:
+
+- `B01003`: Total population
+- `B07001`: Geographic mobility by age
+- `B07009`: Geographic mobility by educational attainment
+- `B08301`: Means of transportation to work, including working from home
+
+These variables will be used to examine population mobility, education, commuting behavior, and remote work across counties. The 2024 ACS 5-Year estimates represent data collected over the 2020–2024 period.
+
+### 2. Bureau of Labor Statistics (BLS) Local Area Unemployment Statistics
+
+- **Source:** U.S. Bureau of Labor Statistics
+- **Dataset:** Local Area Unemployment Statistics (LAUS), County Annual Averages
+- **Years:** 2015–2024
+- **Geographic level:** County
+- **Acquisition method:** BLS Public Data API
+- **Raw data location:** `data/raw/`
+
+The LAUS dataset provides county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. These data will be used to measure local labor-market conditions and compare unemployment outcomes across counties and over time.
+
+### 3. Bureau of Economic Analysis (BEA) County GDP
+
+- **Source:** U.S. Bureau of Economic Analysis
+- **Dataset:** GDP by County (CAGDP1)
+- **Years:** 2015–2024, subject to data availability
+- **Geographic level:** County
+- **Acquisition method:** BEA Data API
+- **Raw data location:** `data/raw/`
+
+The BEA dataset provides county-level measures of gross domestic product. It will be used to measure local economic performance and changes in GDP over time. Because BEA county-level releases may lag behind the other datasets, the final year included in the analysis will depend on data availability.
+
+### Data Integration
+
+The datasets will be standardized using five-digit county FIPS codes, constructed from state and county identifiers where necessary. BLS and BEA observations will also include a year variable because they contain multiple years of data.
+
+The integrated dataset will allow the project to examine relationships among demographic and mobility characteristics, labor-market outcomes, and county-level economic performance.
+
+### Data Acquisition and API Access
+
+Data will be acquired programmatically using Python scripts stored in the `scripts/` directory. Each data source will have a separate acquisition script, and SHA-256 hashes will be used to support data-integrity checks.
+
+API credentials will not be committed to the repository. Credentials are stored locally in `api_keys.txt`, which is excluded from version control through `.gitignore`.
+
+Users reproducing the project can obtain their own API credentials from the following official registration pages:
+
+- Census API key: https://api.census.gov/data/key_signup.html
+- BLS Public Data API registration: https://data.bls.gov/registrationEngine/
+- BEA API key registration: https://apps.bea.gov/api/signup/
+
+Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and preserved before subsequent cleaning and integration steps.
 
 ## Timeline
 | # | Task | Description | Owner | Target date [TBD] | Module |
