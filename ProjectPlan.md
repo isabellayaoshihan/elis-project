@@ -4,12 +4,14 @@
 Lyric
 
 ## Team
-| Member | GitHub | Role | Planned responsibilities |
-|---|---|---|---|
-| Isabella Yao | @isabellayaoshihan | [Role] | Datasets |
-| Lyric Li | @ZehuiLi123 | [Role] | Overview|
-| Eric Shi | @HongyouEric | [Role] | Constrains, Gaps |
-| Susu Tran | @susutran| [Role] | Research Questions  |
+| Member | GitHub | Role | Planned responsibilities | Project plan section |
+|---|---|---|---|---|
+| Isabella Yao | @isabellayaoshihan | Data Acquisition Lead | Acquisition scripts for all three sources with SHA-256 checks; storage and folder organization; source documentation | Datasets |
+| Lyric Li | @ZehuiLi123 | Integration and Workflow Lead | FIPS-based integration and integration schema; Snakemake or run_all workflow; reproducibility testing; release management | Overview |
+| Eric Shi | @HongyouEric | Data Quality and Compliance Lead | Pre- and post-integration quality assessment; cleaning scripts; license and terms of use review | Constraints, Gaps |
+| Susu Tran | @susutran | Analysis and Documentation Lead | Research questions; analysis and visualization; data dictionary and metadata file; final README coordination | Research or Business Question(s) |
+
+All members contribute to each milestone report and commit their own work, so individual contributions are visible in the Git history.
 
 
 ## Research Questions
