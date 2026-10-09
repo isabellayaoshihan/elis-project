@@ -219,3 +219,4 @@ __marimo__/
 
 # Local API keys
 api_keys.txt
+.DS_Store
