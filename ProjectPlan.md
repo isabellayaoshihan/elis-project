@@ -1,7 +1,11 @@
 # Project Plan
 
 ## Overview
-Lyric
+This project asks whether local economic conditions shaped where Americans moved in the early 2020s. Specifically, we test whether county labor-market conditions from 2015 through 2019 (unemployment and GDP growth) predict interstate in-migration from 2020 through 2024, and whether in-migrants differ from existing residents in education and age.
+
+We will integrate three public U.S. government datasets at the county level: the Census Bureau's American Community Survey 2024 5-Year Estimates for in-migration by age and education, remote work, and population; the Bureau of Labor Statistics' Local Area Unemployment Statistics for annual unemployment and labor force; and the Bureau of Economic Analysis' county GDP table (CAGDP1) for economic growth. The sources link through five-digit county FIPS codes, with year as a second key for the annual series.
+
+Since this is a data curation project, our approach centers on the curation chain. We will acquire each dataset programmatically with SHA-256 integrity checks, assess quality across accuracy, completeness, timeliness, and consistency, and clean the specific issues we find, such as Connecticut's shift to planning regions, BEA's combined Virginia independent cities, ACS margins of error in small counties, and the mismatch between pooled and annual periods. We will then integrate the cleaned data, reassess its quality, and run the analysis, all automated through a Snakemake workflow or run-all script so the results can be reproduced from a fresh clone.
 
 ## Team
 | Member | GitHub | Role | Planned responsibilities | Project plan section |
