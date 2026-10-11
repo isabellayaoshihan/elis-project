@@ -1,6 +1,7 @@
 
 import os
 import time
+import hashlib
 import requests
 import pandas as pd
 
@@ -35,6 +36,7 @@ TABLES = [
 ]
 
 OUTPUT_PATH = "data/raw/acs_2024_county_full.csv"
+CHECKSUM_PATH = "data/raw/acs_2024_county_full.sha256"
 
 session = requests.Session()
 
@@ -152,9 +154,8 @@ for table in TABLES:
     time.sleep(1)
 
 
-# ========================================
+
 # 5. Validate Final Dataset
-# ========================================
 
 print("\n===== DATA VALIDATION =====")
 
@@ -184,7 +185,7 @@ if merged.empty:
 if merged["county_fips"].duplicated().any():
     raise ValueError("Duplicate county FIPS in merged data.")
 
-
+# 6. Save Raw Dataset
 os.makedirs("data/raw", exist_ok=True)
 
 merged.to_csv(
@@ -192,10 +193,26 @@ merged.to_csv(
     index=False
 )
 
+# 7. Generate SHA-256 Checksum
+sha256 = hashlib.sha256()
+
+with open(OUTPUT_PATH, "rb") as f:
+    for chunk in iter(lambda: f.read(8192), b""):
+        sha256.update(chunk)
+
+checksum = sha256.hexdigest()
+
+with open(CHECKSUM_PATH, "w") as f:
+    f.write(checksum + "\n")
+
+
+# 8. Final Output
 print("\n===== DOWNLOAD COMPLETE =====")
 
 print("File saved:", OUTPUT_PATH)
 print("Final shape:", merged.shape)
+print("SHA-256:", checksum)
+print("Checksum saved:", CHECKSUM_PATH)
 
 print("\nPreview:")
 print(merged.iloc[:5, :8])
