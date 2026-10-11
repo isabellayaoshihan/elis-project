@@ -48,7 +48,7 @@ The analysis will focus on the 50 states and District of Columbia. Puerto Rico w
 
 - **Source:** U.S. Bureau of Labor Statistics
 - **Dataset:** Local Area Unemployment Statistics (LAUS), County Annual Averages
-- **Years:** 2015–2024
+- **Years:** 2015–2024, subject to source-specific geographic availability
 - **Geographic level:** County
 - **Acquisition method:** BLS Public Data API
 - **Raw data location:** `data/raw/`
