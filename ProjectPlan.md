@@ -52,6 +52,13 @@ These variables will be used to examine population mobility, education, commutin
 - **Acquisition method:** BLS Public Data API
 - **Raw data location:** `data/raw/`
 
+The LAUS dataset provides annual county-level labor-market information. The project will use the following measures:
+
+- Labor force
+- Employment
+- Unemployment
+- Unemployment rate
+
 The LAUS dataset provides county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. Annual-average observations from 2015 through 2024 will be used to measure local labor-market conditions and examine differences in unemployment outcomes across counties and over time.
 
 ### 3. Bureau of Economic Analysis (BEA) County GDP
