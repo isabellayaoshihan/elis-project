@@ -23,8 +23,7 @@ Susu
 
 
 ## Datasets
-
-The project will integrate three public U.S. government datasets at the county level. The datasets provide complementary demographic, labor-market, and economic information. County FIPS codes will be used as the primary geographic identifier for integration.
+The project will integrate three public U.S. government datasets at the county or county-equivalent level. The datasets provide complementary demographic, labor-market, and economic information. Geographic identifiers (County FIPS codes) will be harmonized before integration because some source-specific geographic definitions do not map one-to-one across all years and datasets.
 
 ### 1. American Community Survey (ACS) 5-Year Estimates
 
@@ -34,14 +33,16 @@ The project will integrate three public U.S. government datasets at the county l
 - **Acquisition method:** Census Data API
 - **Raw data location:** `data/raw/`
 
-The ACS dataset provides demographic and socioeconomic characteristics for U.S. counties. The project uses variables from several detailed tables, including:
+The ACS dataset provides demographic, mobility, and commuting characteristics for U.S. counties and county equivalents. The project uses variables from several detailed tables:
 
 - `B01003`: Total population
 - `B07001`: Geographic mobility by age
 - `B07009`: Geographic mobility by educational attainment
 - `B08301`: Means of transportation to work, including working from home
 
-These variables will be used to examine population mobility, education, commuting behavior, and remote work across counties. The 2024 ACS 5-Year estimates represent data collected over the 2020–2024 period.
+The 2024 ACS 5-Year Estimates pool survey observations across 2020–2024. The mobility tables describe mobility status relative to residence one year earlier, so they will be treated as pooled early-2020s mobility estimates rather than cumulative five-year migration totals.
+
+The analysis will focus on the 50 states and District of Columbia. Puerto Rico will be excluded because the ACS uses separate Puerto Rico versions of the mobility tables and the project's research question focuses on interstate migration.
 
 ### 2. Bureau of Labor Statistics (BLS) Local Area Unemployment Statistics
 
@@ -52,14 +53,7 @@ These variables will be used to examine population mobility, education, commutin
 - **Acquisition method:** BLS Public Data API
 - **Raw data location:** `data/raw/`
 
-The LAUS dataset provides annual county-level labor-market information. The project will use the following measures:
-
-- Labor force
-- Employment
-- Unemployment
-- Unemployment rate
-
-The LAUS dataset provides county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. Annual-average observations from 2015 through 2024 will be used to measure local labor-market conditions and examine differences in unemployment outcomes across counties and over time.
+The LAUS dataset provides annual-average county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. The primary analysis will use 2015–2019 unemployment rates to represent pre-2020 local labor-market conditions, while later years will remain available for descriptive or sensitivity analyses.
 
 ### 3. Bureau of Economic Analysis (BEA) County GDP
 
@@ -70,7 +64,9 @@ The LAUS dataset provides county-level labor-market measures, including labor fo
 - **Acquisition method:** BEA Data API
 - **Raw data location:** `data/raw/`
 
-The BEA dataset provides annual county-level measures of gross domestic product. These data will be used to measure local economic performance and changes in GDP over time and to examine how county economic performance relates to labor-market conditions.
+The BEA dataset provides county-level GDP measures. The acquisition script retains both real GDP and current-dollar GDP. Real GDP will be used to calculate economic growth because it allows growth to be compared without changes in the general price level being interpreted as real economic growth.
+
+The primary analysis will summarize real GDP growth during 2015–2019 as a measure of pre-2020 county economic performance.
 
 ### Data Integration
 
