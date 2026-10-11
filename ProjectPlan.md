@@ -52,7 +52,7 @@ These variables will be used to examine population mobility, education, commutin
 - **Acquisition method:** BLS Public Data API
 - **Raw data location:** `data/raw/`
 
-The LAUS dataset provides county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. These data will be used to measure local labor-market conditions and compare unemployment outcomes across counties and over time.
+The LAUS dataset provides county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. Annual-average observations from 2015 through 2024 will be used to measure local labor-market conditions and examine differences in unemployment outcomes across counties and over time.
 
 ### 3. Bureau of Economic Analysis (BEA) County GDP
 
@@ -63,13 +63,15 @@ The LAUS dataset provides county-level labor-market measures, including labor fo
 - **Acquisition method:** BEA Data API
 - **Raw data location:** `data/raw/`
 
-The BEA dataset provides county-level measures of gross domestic product. It will be used to measure local economic performance and changes in GDP over time. Because BEA county-level releases may lag behind the other datasets, the final year included in the analysis will depend on data availability.
+The BEA dataset provides annual county-level measures of gross domestic product. These data will be used to measure local economic performance and changes in GDP over time and to examine how county economic performance relates to labor-market conditions.
 
 ### Data Integration
 
-The datasets will be standardized using five-digit county FIPS codes, constructed from state and county identifiers where necessary. BLS and BEA observations will also include a year variable because they contain multiple years of data.
+The datasets will be standardized using five-digit county FIPS codes, constructed from state and county identifiers where necessary. BLS and BEA observations will also include a year variable because both datasets contain annual observations from 2015 through 2024. These two datasets can therefore be integrated using county FIPS code and year.
 
-The integrated dataset will allow the project to examine relationships among demographic and mobility characteristics, labor-market outcomes, and county-level economic performance.
+The ACS data differ because the 2024 5-Year estimates summarize characteristics over the 2020–2024 period rather than providing a separate observation for each year. ACS variables will therefore be treated as county-level demographic and socioeconomic characteristics and linked to the BLS and BEA data using county FIPS codes.
+
+Together, the three datasets provide complementary information: ACS describes county demographic and socioeconomic characteristics, BLS measures labor-market outcomes, and BEA measures local economic performance. The integrated dataset will allow the project to examine relationships among population mobility, education, commuting and remote-work patterns, unemployment, and county-level economic performance.
 
 ### Data Acquisition and API Access
 
