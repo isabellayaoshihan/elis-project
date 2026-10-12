@@ -1,26 +1,37 @@
 # Project Plan
 
 ## Overview
-This project asks whether local economic conditions shaped where Americans moved in the early 2020s. Specifically, we test whether county labor-market conditions from 2015 through 2019 (unemployment and GDP growth) predict interstate in-migration from 2020 through 2024, and whether in-migrants differ from existing residents in education and age.
+This project asks whether local economic conditions shaped where Americans moved. Specifically, we test whether county labor-market conditions from 2015 through 2019 (unemployment and GDP growth) predict interstate in-migration from 2020 through 2024, and whether in-migrants differ from existing residents in education and age.
 
 We will integrate three public U.S. government datasets at the county level: the Census Bureau's American Community Survey 2024 5-Year Estimates for in-migration by age and education, remote work, and population; the Bureau of Labor Statistics' Local Area Unemployment Statistics for annual unemployment and labor force; and the Bureau of Economic Analysis' county GDP table (CAGDP1) for economic growth. The sources link through five-digit county FIPS codes, with year as a second key for the annual series.
 
-Since this is a data curation project, our approach centers on the curation chain. We will acquire each dataset programmatically with SHA-256 integrity checks, assess quality across accuracy, completeness, timeliness, and consistency, and clean the specific issues we find, such as Connecticut's shift to planning regions, BEA's combined Virginia independent cities, ACS margins of error in small counties, and the mismatch between pooled and annual periods. We will then integrate the cleaned data, reassess its quality, and run the analysis, all automated through a Snakemake workflow or run-all script so the results can be reproduced from a fresh clone.
+Our approach follows the curation chain. We will acquire each dataset programmatically with SHA-256 integrity checks and assess its quality for accuracy, completeness, timeliness, and consistency. We will then clean the issues we find, such as Connecticut's planning regions, BEA's combined Virginia cities, and unreliable small-county ACS estimates. After cleaning, we integrate the datasets, reassess quality, and run the analysis, all automated through a Snakemake or run-all workflow.
 
 ## Team
-| Member | GitHub | Role | Planned responsibilities | Project plan section |
-|---|---|---|---|---|
-| Isabella Yao | @isabellayaoshihan | Data Acquisition Lead | Acquisition scripts for all three sources with SHA-256 checks; storage and folder organization; source documentation | Datasets |
-| Lyric Li | @ZehuiLi123 | Integration and Workflow Lead | FIPS-based integration and integration schema; Snakemake or run_all workflow; reproducibility testing; release management | Overview |
-| Eric Shi | @HongyouEric | Data Quality and Compliance Lead | Pre- and post-integration quality assessment; cleaning scripts; license and terms of use review | Constraints, Gaps |
-| Susu Tran | @susutran | Analysis and Documentation Lead | Research questions; analysis and visualization; data dictionary and metadata file; final README coordination | Research or Business Question(s) |
+| Member | Role | Planned responsibilities |
+|---|---|---|
+| Isabella Yao | Data Acquisition Lead | Acquisition scripts for all three sources with SHA-256 checks; storage and folder organization; source documentation | 
+| Lyric Li | Integration and Workflow Lead | FIPS-based integration and integration schema; Snakemake or run_all workflow; reproducibility testing; release management |
+| Eric Shi | Data Quality and Compliance Lead | Pre- and post-integration quality assessment; cleaning scripts; license and terms of use review |
+| Susu Tran | Analysis and Documentation Lead | Research questions; analysis and visualization; data dictionary and metadata file; final README coordination |
 
-All members contribute to each milestone report and commit their own work, so individual contributions are visible in the Git history.
+## Research Question
 
+**Main question:** Did county labor-market conditions before 2020 predict interstate in-migration in the early 2020s?
 
-## Research Questions
-Susu
+- **RQ1.** Are lower 2015–2019 average unemployment rates and higher 2015–2019 real GDP growth associated with higher 2020–2024 interstate in-migration rates across U.S. counties?
+- **RQ2.** Do interstate in-migrants differ from long-term residents in educational attainment (share with a bachelor's degree or higher, ages 25+) and age distribution?
+- **RQ3.** Does the share of workers working from home (ACS B08301) weaken or explain the association in RQ1?
 
+**Measures**
+- *In-migration rate* = residents who lived in a different state one year earlier ÷ total population aged 1+ (ACS B07001, pooled 2020–2024).
+- *Pre-2020 labor market* = mean LAUS unemployment rate, 2015–2019.
+- *Pre-2020 growth* = annualized real GDP growth, 2015–2019 (BEA CAGDP1).
+- *Comparison group for RQ2* = residents who lived in the same house one year earlier (B07001, B07009).
+
+**Scope:** the 50 states and DC; Puerto Rico is excluded.
+
+**Interpretation limits:** results show association, not causation. The pandemic and remote-work shifts confound the period, and ACS gives the destination county only, not the origin.
 
 ## Datasets
 The project will integrate three public U.S. government datasets at the county or county-equivalent level. The datasets provide complementary demographic, labor-market, and economic information. Geographic identifiers (County FIPS codes) will be harmonized before integration because some source-specific geographic definitions do not map one-to-one across all years and datasets.
@@ -29,9 +40,7 @@ The project will integrate three public U.S. government datasets at the county o
 
 - **Source:** U.S. Census Bureau
 - **Dataset:** 2024 ACS 5-Year Detailed Tables
-- **Geographic level:** County
 - **Acquisition method:** Census Data API
-- **Raw data location:** `data/raw/`
 
 The ACS dataset provides demographic, mobility, and commuting characteristics for U.S. counties and county equivalents. The project uses variables from several detailed tables:
 
@@ -42,16 +51,11 @@ The ACS dataset provides demographic, mobility, and commuting characteristics fo
 
 The 2024 ACS 5-Year Estimates pool survey observations across 2020–2024. The mobility tables describe mobility status relative to residence one year earlier, so they will be treated as pooled early-2020s mobility estimates rather than cumulative five-year migration totals.
 
-The analysis will focus on the 50 states and District of Columbia. Puerto Rico will be excluded because the ACS uses separate Puerto Rico versions of the mobility tables and the project's research question focuses on interstate migration.
-
 ### 2. Bureau of Labor Statistics (BLS) Local Area Unemployment Statistics
 
 - **Source:** U.S. Bureau of Labor Statistics
 - **Dataset:** Local Area Unemployment Statistics (LAUS), County Annual Averages
-- **Years:** 2015–2024, subject to source-specific geographic availability
-- **Geographic level:** County
 - **Acquisition method:** BLS Public Data API
-- **Raw data location:** `data/raw/`
 
 The LAUS dataset provides annual-average county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. The primary analysis will use 2015–2019 unemployment rates to represent pre-2020 local labor-market conditions, while later years will remain available for descriptive or sensitivity analyses.
 
@@ -59,10 +63,7 @@ The LAUS dataset provides annual-average county-level labor-market measures, inc
 
 - **Source:** U.S. Bureau of Economic Analysis
 - **Dataset:** GDP by County (CAGDP1)
-- **Years:** 2015–2024, subject to data availability
-- **Geographic level:** County
 - **Acquisition method:** BEA Data API
-- **Raw data location:** `data/raw/`
 
 The BEA dataset provides county-level GDP measures. The acquisition script retains both real GDP and current-dollar GDP. Real GDP will be used to calculate economic growth because it allows growth to be compared without changes in the general price level being interpreted as real economic growth.
 
@@ -90,6 +91,15 @@ Users reproducing the project can obtain their own API credentials from the foll
 
 Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and preserved before subsequent cleaning and integration steps.
 
+## Data Lifecycle
+We follow the DataONE lifecycle. **Plan** is this document. **Collect** is the API acquisition. **Assure** is quality assessment and cleaning, repeated after integration. **Integrate** joins the sources on county FIPS. **Analyze** answers RQ1–RQ3. **Describe** (data dictionary and metadata) and **Preserve** (checksums and tagged releases) run throughout. If integration reveals new issues, we return to Assure and rerun the workflow.
+
+## Storage and Organization
+Data are stored as flat tabular files, organized by curation stage: `data/raw/` (unmodified API output in CSV and JSON, each with a `.sha256` checksum), `data/processed/` (cleaned source tables), `data/integrated/` (joined analysis table), `results/` (quality reports and figures), and `scripts/` (one script per stage). BLS and BEA use one row per county-year, and ACS uses one row per county. FIPS codes are stored as zero-padded strings so leading zeros are not lost.
+
+## Ethical Data Handling and Licensing
+All three sources are U.S. government works in the public domain, so the raw files can be redistributed in this repository. We will follow each API's terms of use. The data are county-level aggregates with no individual records, so privacy risk is low. API keys are kept out of the repository (see Data Acquisition). No Kaggle datasets are used.
+
 ## Timeline
 | # | Task | Description | Owner | Target date | Module |
 |---|---|---|---|---|---|
@@ -111,6 +121,7 @@ Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and 
 | 16 | Licenses and references | License for our code, data license notes, citations for all data and software | Eric Shi | Dec 3 | M3 |
 | 17 | Reproducibility test | Fresh clone, clean install, full workflow run | Lyric Li | Dec 5 | M14 |
 | 18 | Final report and release | Complete README.md and publish the final-project release | All | Dec 7 | |
+
 ## Constraints
 The project faces several data quality and integration constraints across the ACS, BLS, and BEA datasets.
 

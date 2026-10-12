@@ -1,0 +1,2 @@
+# Store raw data byte-for-byte so SHA-256 checksums match on every OS.
+data/raw/** -text
