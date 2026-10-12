@@ -112,7 +112,25 @@ Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and 
 | 17 | Reproducibility test | Fresh clone, clean install, full workflow run | Lyric Li | Dec 5 | M14 |
 | 18 | Final report and release | Complete README.md and publish the final-project release | All | Dec 7 | |
 ## Constraints
-Eric
+The project faces several data quality and integration constraints across the ACS, BLS, and BEA datasets.
+
+Geographic consistency: The datasets use different geographic reporting conventions. The initial assessment identified 3,222 geographic units in ACS and BLS, compared with 3,127 in BEA. After excluding Puerto Rico, 53 ACS geographic units cannot be directly matched to BEA records. Differences involving Virginia independent cities, Hawaii, and Connecticut's transition to planning regions require careful FIPS harmonization.
+
+Data completeness and reliability: ACS contains missing values and special codes representing unavailable margins of error. BLS includes incomplete historical series for certain Alaska counties, while BEA contains zero-valued GDP observations requiring further interpretation. These issues may affect the completeness and reliability of county-level comparisons.
+
+Temporal comparability: ACS 2024 5-Year Estimates represent pooled 2020–2024 survey data, whereas BLS and BEA provide annual observations from 2015–2024. The project must account for these differences when comparing pre-2020 economic conditions with subsequent migration patterns.
+
+Technical and ethical constraints: Data acquisition depends on government API availability and credentials. Reproducibility requires consistent file formats, documented transformations, and integrity verification. Although the datasets contain aggregated public statistics, source-specific usage terms, attribution requirements, and limitations of statistical interpretation must be reviewed.
 
 ## Gaps
-Eric
+Initial data inspection identified several issues that require further investigation and resolution.
+
+Geographic harmonization: We need to establish mapping rules for counties and county equivalents that do not match across datasets. In particular, BEA's reporting of certain Virginia localities and Connecticut's geographic changes require additional validation before integration.
+
+Missing and invalid observations: The initial assessment found 20,592 missing ACS cells, concentrated in Puerto Rico, which is outside the planned study scope. We also identified incomplete BLS time series and 268 zero-valued BEA GDP records. Further profiling will determine how these observations should be excluded, flagged, or otherwise handled.
+
+Statistical reliability: The ACS dataset includes margins of error, but thresholds for identifying unreliable estimates have not yet been established. We need to determine appropriate criteria for handling estimates from small counties and document their impact on the analysis.
+
+Variable definitions: Interstate migration rates, real GDP growth, and demographic comparison measures have not yet been finalized. We will verify the relevant variable definitions and denominators to ensure consistency with the research questions.
+
+Integration validation and documentation: The final integration schema, cleaning procedures, and quality thresholds remain under development. We will validate join coverage, duplicate records, missing values, and potential information loss, then document the resulting transformations and remaining limitations.
