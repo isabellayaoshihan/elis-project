@@ -125,13 +125,14 @@ All three sources are U.S. government works in the public domain, so the raw fil
 ## Constraints
 The project faces several data quality and integration constraints across the ACS, BLS, and BEA datasets.
 
-Geographic consistency: The datasets use different geographic reporting conventions. The initial assessment identified 3,222 geographic units in ACS and BLS, compared with 3,127 in BEA. After excluding Puerto Rico, 53 ACS geographic units cannot be directly matched to BEA records. Differences involving Virginia independent cities, Hawaii, and Connecticut's transition to planning regions require careful FIPS harmonization.
+**Geographic consistency:** The ACS, BLS, and BEA datasets use different geographic reporting conventions. Our initial assessment identified 3,222 geographic units in ACS and BLS, compared with 3,127 in BEA. After excluding Puerto Rico, 53 ACS geographic units could not be directly matched to BEA records. These differences involve Connecticut's planning regions, Virginia's independent cities, and certain other county equivalents. To address this issue, we will standardize county FIPS codes across all three datasets and investigate unmatched geographic units before integration. Where geographic definitions cannot be reconciled, we will document the affected counties and determine whether to exclude them from the final analysis. We will also report the number of matched and unmatched counties to evaluate the coverage of our integrated dataset.
 
-Data completeness and reliability: ACS contains missing values and special codes representing unavailable margins of error. BLS includes incomplete historical series for certain Alaska counties, while BEA contains zero-valued GDP observations requiring further interpretation. These issues may affect the completeness and reliability of county-level comparisons.
+**Data completeness and reliability:** ACS contains missing values and special codes representing unavailable margins of error. BLS includes incomplete historical series for certain Alaska counties, while BEA contains zero-valued GDP observations requiring further interpretation. These issues may affect the completeness and reliability of county-level comparisons.
 
-Temporal comparability: ACS 2024 5-Year Estimates represent pooled 2020–2024 survey data, whereas BLS and BEA provide annual observations from 2015–2024. The project must account for these differences when comparing pre-2020 economic conditions with subsequent migration patterns.
+**Temporal comparability:** ACS 2024 5-Year Estimates represent pooled 2020–2024 survey data, whereas BLS and BEA provide annual observations from 2015–2024. The project must account for these differences when comparing pre-2020 economic conditions with subsequent migration patterns.
 
-Technical and ethical constraints: Data acquisition depends on government API availability and credentials. Reproducibility requires consistent file formats, documented transformations, and integrity verification. Although the datasets contain aggregated public statistics, source-specific usage terms, attribution requirements, and limitations of statistical interpretation must be reviewed.
+**Technical and ethical constraints:** Data acquisition depends on government API availability and credentials. Reproducibility requires consistent file formats, documented transformations, and integrity verification. Although the datasets contain aggregated public statistics, source-specific usage terms, attribution requirements, and limitations of statistical interpretation must be reviewed.
+
 
 ## Gaps
 Initial data inspection identified several issues that require further investigation and resolution.
