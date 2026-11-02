@@ -1,0 +1,53 @@
+BLS LAUS PRE-INTEGRATION QUALITY ASSESSMENT
+
+Source: bls_laus_2015_2024_annual.json
+Total observations: 128,800
+Unique county FIPS: 3,221
+Expected ACS counties (excluding Puerto Rico): 3,144
+Observed years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+
+QUALITY CHECKS (counts may overlap)
+invalid_fips: 0
+invalid_series_id: 0
+invalid_year: 0
+invalid_measure: 0
+not_annual: 0
+missing_value: 312
+invalid_value: 0
+duplicate_key: 0
+puerto_rico: 3,120
+not_in_acs: 0
+
+MISSING RECORDS AND GEOGRAPHIC COVERAGE
+Missing county-year-measure records: 80
+Counties entirely missing from BLS: 1
+
+Missing records by year:
+  2015: 12
+  2016: 12
+  2017: 12
+  2018: 12
+  2019: 12
+  2020: 4
+  2021: 4
+  2022: 4
+  2023: 4
+  2024: 4
+
+MISSING NUMERICAL VALUES BY MEASURE
+  unemployment_rate: 0
+  unemployed: 0
+  employed: 0
+  labor_force: 0
+
+PRE-2020 UNEMPLOYMENT RATE COVERAGE
+Missing or unusable 2015-2019 county-year rates: 15
+Counties with incomplete 2015-2019 rates: 3
+
+NOTES
+Expected geographic coverage is based on ACS 2024.
+Puerto Rico is identified for exclusion during cleaning.
+Missing records may reflect geographic or historical differences.
+Missing and invalid numerical values are assessed separately.
+Arithmetic consistency checks require separate validation.
+No raw data were modified.
