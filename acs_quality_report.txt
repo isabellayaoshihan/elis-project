@@ -1,0 +1,39 @@
+ACS pre-integration data quality assessment
+Source: U.S. Census Bureau, 2024 ACS 5-Year Detailed Tables
+Input: data/raw/acs_2024_county_full.csv
+Tables: B01003, B07001, B07009, B08301
+
+Accuracy, completeness, and consistency
+SHA-256 matches recorded checksum: True
+Raw county rows: 3222
+Unknown state or territory rows: 0
+Raw columns: 312
+Estimate columns: 154
+Margin-of-error columns: 154
+Duplicate full rows (additional occurrences): 0
+Duplicate FIPS (additional occurrences): 0
+Invalid or inconsistent FIPS rows: 0
+Blank county names: 0
+Nonnumeric nonblank estimate/MOE cells: 0
+Unexpected negative estimate/MOE cells: 0
+Puerto Rico rows: 78
+Rows in project scope (50 states and DC): 3144
+Blank estimate/MOE cells, all rows: 20592
+Blank estimate/MOE cells, in scope: 0
+Controlled MOE codes, all rows: 3384
+Controlled MOE codes, in scope: 3308
+Connecticut planning-region rows: 9
+The checksum verifies file integrity. FIPS checks verify format and
+internal agreement. Individual estimates were not independently verified.
+
+Timeliness and interpretation
+The 2024 five-year release pools 2020–2024 responses. Mobility measures
+compare current residence with residence one year before the survey.
+
+Cleaning decisions and integration notes
+Exclude Puerto Rico per the project scope. Preserve all remaining county
+records and estimates. Export controlled MOE codes (-555555555) as blank
+because they are not numeric margins of error. Zero values are retained.
+Source note: https://www.census.gov/help/topics/faq.in-the-acs-data-products-i-see-a-controlled-estimate.html
+No reliability threshold was applied. Keep Connecticut planning-region
+FIPS for cross-source review. Read county_fips as text when joining.

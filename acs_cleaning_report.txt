@@ -1,0 +1,20 @@
+ACS cleaning and post-cleaning validation
+Input rows: 3222
+Excluded Puerto Rico rows: 78
+Output rows: 3144
+Output columns: 312
+Controlled MOE cells exported as blank: 3308
+Remaining blank estimate cells: 0
+Blank MOE cells: 3308
+Round-trip comparison against every expected output cell: PASS
+County FIPS uniqueness and format: PASS
+Raw checksum validation: PASS
+
+Controlled MOE locations remain recoverable from the raw CSV using
+county_fips and the variable name. Column counts are in acs_column_quality.csv.
+Use dtype={'county_fips': str, 'state': str, 'county': str} when reading CSV.
+CSV has no stored data types; opening in Excel may remove leading zeros.
+No imputation or statistical outlier removal was applied.
+Reliability thresholds and geographic crosswalks require group decisions.
+Use county_fips to link county-level ACS to summarized BLS/BEA measures.
+Treat a repeated ACS observation in a county-year join as the same pooled estimate.
