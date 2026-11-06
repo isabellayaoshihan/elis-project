@@ -3,17 +3,18 @@
 ## Overview
 This project asks whether local economic conditions shaped where Americans moved. Specifically, we test whether county labor-market conditions from 2015 through 2019 (unemployment and GDP growth) predict interstate in-migration from 2020 through 2024, and whether in-migrants differ from existing residents in education and age.
 
-We will integrate three public U.S. government datasets at the county level: the Census Bureau's American Community Survey 2024 5-Year Estimates for in-migration by age and education, remote work, and population; the Bureau of Labor Statistics' Local Area Unemployment Statistics for annual unemployment and labor force; and the Bureau of Economic Analysis' county GDP table (CAGDP1) for economic growth. The sources link through five-digit county FIPS codes, with year as a second key for the annual series.
+We will integrate three public U.S. government datasets at the county level: the Census Bureau's 2024 ACS 5-Year Estimates, which provide information on migration, age, education, population, and working from home; the Bureau of Labor Statistics' (BLS) Local Area Unemployment Statistics (LAUS), which provide annual employment and unemployment measures for 2015–2024; and the Bureau of Economic Analysis' (BEA) County GDP dataset (CAGDP1), which provides annual economic output for 2015–2024. The sources link through five-digit county FIPS codes, although some geographic definitions differ and require additional handling before integration.
 
-Our approach follows the curation chain. We will acquire each dataset programmatically with SHA-256 integrity checks and assess its quality for accuracy, completeness, timeliness, and consistency. We will then clean the issues we find, such as Connecticut's planning regions, BEA's combined Virginia cities, and unreliable small-county ACS estimates. After cleaning, we integrate the datasets, reassess quality, and run the analysis, all automated through a Snakemake or run-all workflow.
+Our approach follows the data curation lifecycle. We will acquire each dataset programmatically with SHA-256 integrity checks and assess its quality for accuracy, completeness, timeliness, and consistency. Each dataset will be cleaned separately, while the original files remain unchanged. We will then resolve differences in geographic coverage, combine the cleaned datasets at the county level, and assess the quality of the integrated data. Finally, we will conduct the analysis and document the results. The process will be supported by a reproducible workflow using Snakemake or a run-all script.
+
 
 ## Team
 | Member | Role | Planned responsibilities |
 |---|---|---|
-| Isabella Yao | Data Acquisition Lead | Acquisition scripts for all three sources with SHA-256 checks; storage and folder organization; source documentation | 
+| Isabella Yao | Data Acquisition Lead | Acquisition scripts for ACS and BLS with SHA-256 checks; storage and folder organization; source documentation; BLS quality assessment and cleaning | 
 | Lyric Li | Integration and Workflow Lead | FIPS-based integration and integration schema; Snakemake or run_all workflow; reproducibility testing; release management |
-| Eric Shi | Data Quality and Compliance Lead | Pre- and post-integration quality assessment; cleaning scripts; license and terms of use review |
-| Susu Tran | Analysis and Documentation Lead | Research questions; analysis and visualization; data dictionary and metadata file; final README coordination |
+| Eric Shi | Data Quality and Compliance Lead | ACS quality assessment and cleaning; support for post-integration quality assessment; license and terms of use review |
+| Susu Tran | Analysis and Documentation Lead | BEA acquisition, quality assessment, and cleaning; research questions; analysis and visualization; data dictionary and metadata file; final README coordination |
 
 ## Research Question
 
@@ -24,10 +25,10 @@ Our approach follows the curation chain. We will acquire each dataset programmat
 - **RQ3.** Does the share of workers working from home (ACS B08301) weaken or explain the association in RQ1?
 
 **Measures**
-- *In-migration rate* = residents who lived in a different state one year earlier ÷ total population aged 1+ (ACS B07001, pooled 2020–2024).
-- *Pre-2020 labor market* = mean LAUS unemployment rate, 2015–2019.
+- *In-migration rate* = residents who lived in a different state one year earlier ÷ total population aged 1+ (ACS B07001, pooled 2020–2024). This measures interstate mobility among current county residents, not total migration over the entire five-year period.
+- *Pre-2020 labor market* = mean LAUS unemployment rate, 2015–2019. We will calculate the average of the five annual unemployment rates for each county, using the annual-average observations (M13).
 - *Pre-2020 growth* = annualized real GDP growth, 2015–2019 (BEA CAGDP1).
-- *Comparison group for RQ2* = residents who lived in the same house one year earlier (B07001, B07009).
+- *Comparison group for RQ2* = residents who lived in the same house one year earlier (B07001, B07009). Age comparisons will use B07001 (population aged 1+), while education comparisons will use B07009 (population aged 25+).
 
 **Scope:** the 50 states and DC; Puerto Rico is excluded.
 
@@ -41,6 +42,8 @@ The project will integrate three public U.S. government datasets at the county o
 - **Source:** U.S. Census Bureau
 - **Dataset:** 2024 ACS 5-Year Detailed Tables
 - **Acquisition method:** Census Data API
+- **Time coverage:** 2020–2024, pooled five-year estimates
+- **Geographic identifier:** county_fips, a five-digit code combining the state and county identifiers
 
 The ACS dataset provides demographic, mobility, and commuting characteristics for U.S. counties and county equivalents. The project uses variables from several detailed tables:
 
@@ -49,31 +52,53 @@ The ACS dataset provides demographic, mobility, and commuting characteristics fo
 - `B07009`: Geographic mobility by educational attainment
 - `B08301`: Means of transportation to work, including working from home
 
-The 2024 ACS 5-Year Estimates pool survey observations across 2020–2024. The mobility tables describe mobility status relative to residence one year earlier, so they will be treated as pooled early-2020s mobility estimates rather than cumulative five-year migration totals.
+The raw dataset contains 3,222 geographic records and 312 columns, including geographic identifiers, estimates, and margins of error. These four tables describe different population characteristics rather than different years.
+
+The 2024 ACS 5-Year Estimates pool survey observations across 2020–2024. The estimates reflect information collected throughout this period rather than the arithmetic average of five separate annual datasets. The mobility tables describe mobility status relative to residence one year earlier, so they will be treated as pooled early-2020s mobility estimates rather than cumulative five-year migration totals.
+
+For the analysis, B07001 will provide the interstate in-migration rate and age distribution of migrants, while B07009 will support comparisons of educational attainment between interstate migrants and nonmovers. B08301 will be used to calculate the share of workers working from home. Because the estimates are based on survey samples, margins of error will be considered when assessing reliability, particularly for smaller counties.
 
 ### 2. Bureau of Labor Statistics (BLS) Local Area Unemployment Statistics
 
 - **Source:** U.S. Bureau of Labor Statistics
 - **Dataset:** Local Area Unemployment Statistics (LAUS), County Annual Averages
 - **Acquisition method:** BLS Public Data API
+- **Time coverage:** 2015–2024, with separate annual observations
+- **Geographic identifier:** County FIPS code embedded in the seriesID field
 
-The LAUS dataset provides annual-average county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. The primary analysis will use 2015–2019 unemployment rates to represent pre-2020 local labor-market conditions, while later years will remain available for descriptive or sensitivity analyses.
+The LAUS dataset provides annual-average county-level labor-market measures, including labor force, employment, unemployment, and unemployment rate. The raw data contain four measures identified by the final two digits of each series ID: unemployment rate (03), unemployment (04), employment (05), and labor force (06). Each measure is recorded for individual years from 2015 to 2024, with M13 indicating the annual average.
+
+The raw extraction contains 3,221 geographic identifiers with observations. Most have all four measures for all ten years, although some areas have incomplete historical coverage.
+
+The primary analysis will use 2015–2019 unemployment rates to represent pre-2020 local labor-market conditions, while later years will remain available for descriptive or sensitivity analyses.
 
 ### 3. Bureau of Economic Analysis (BEA) County GDP
 
 - **Source:** U.S. Bureau of Economic Analysis
 - **Dataset:** GDP by County (CAGDP1)
 - **Acquisition method:** BEA Data API
+- **Time coverage:** 2015–2024, with separate annual observations
+- **Geographic identifier:** GeoFips, which generally contains a five-digit county FIPS code but also includes identifiers for combined geographic areas
 
-The BEA dataset provides county-level GDP measures. The acquisition script retains both real GDP and current-dollar GDP. Real GDP will be used to calculate economic growth because it allows growth to be compared without changes in the general price level being interpreted as real economic growth.
+The BEA dataset provides county-level GDP measures. The acquisition script retains both real GDP and current-dollar GDP. These measures are distinguished by LineCode: 1 represents real GDP in thousands of chained 2017 dollars, while 3 represents current-dollar GDP in thousands of dollars.
+
+Real GDP will be used to calculate economic growth because it allows growth to be compared without changes in the general price level being interpreted as real economic growth.
+
+The raw dataset contains 62,540 rows across 3,127 geographic identifiers. Each geographic area generally appears multiple times because the dataset includes ten years and two GDP measures. These repeated observations are expected and are not duplicates when the year and GDP measure are considered.
 
 The primary analysis will summarize real GDP growth during 2015–2019 as a measure of pre-2020 county economic performance.
 
 ### Data Integration
 
-The datasets will be standardized using five-digit county FIPS codes, constructed from state and county identifiers where necessary. BLS and BEA observations will also include a year variable because both datasets contain annual observations from 2015 through 2024. These two datasets can therefore be integrated using county FIPS code and year.
+The datasets will be standardized using five-digit county FIPS codes, constructed from state and county identifiers where necessary. However, the datasets differ in both their time structure and geographic coverage, so they cannot be combined directly without preparation.
 
-The ACS data differ because the 2024 5-Year estimates summarize characteristics over the 2020–2024 period rather than providing a separate observation for each year. ACS variables will therefore be treated as county-level demographic and socioeconomic characteristics and linked to the BLS and BEA data using county FIPS codes.
+The ACS dataset contains one row per county and provides pooled estimates for 2020–2024. BLS and BEA contain separate annual observations from 2015–2024. Therefore, we will first summarize the BLS and BEA data into county-level measures for 2015–2019, including average unemployment rate and annualized real GDP growth.
+
+The integration will then use county FIPS codes to join these economic measures with the ACS migration, demographic, and remote-work variables. The intended output is one row per county-level geographic unit, with separate columns for each variable used in the analysis.
+
+Before joining the datasets, we will review geographic inconsistencies involving Connecticut's planning regions, Virginia's combined counties and independent cities, Hawaii, and Alaska. Geographic codes that appear to match will also be checked for differences in area definitions. Where reliable comparisons are not possible, affected areas will be excluded from the primary analysis and documented rather than combined using unsupported assumptions.
+
+After integration, we will check for missing values, duplicate county identifiers, unexpected changes in row counts, and unmatched counties. We will report the final number of geographic units retained and explain any exclusions.
 
 Together, the three datasets provide complementary information: ACS describes county demographic and socioeconomic characteristics, BLS measures labor-market outcomes, and BEA measures local economic performance. The integrated dataset will allow the project to examine relationships among population mobility, education, commuting and remote-work patterns, unemployment, and county-level economic performance.
 
@@ -92,10 +117,10 @@ Users reproducing the project can obtain their own API credentials from the foll
 Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and preserved before subsequent cleaning and integration steps.
 
 ## Data Lifecycle
-We follow the DataONE lifecycle. **Plan** is this document. **Collect** is the API acquisition. **Assure** is quality assessment and cleaning, repeated after integration. **Integrate** joins the sources on county FIPS. **Analyze** answers RQ1–RQ3. **Describe** (data dictionary and metadata) and **Preserve** (checksums and tagged releases) run throughout. If integration reveals new issues, we return to Assure and rerun the workflow.
+We follow the DataONE lifecycle. The **Plan** stage defines our research questions, data sources, and methods. During **Collect**, we acquire the three datasets through government APIs and verify file integrity using SHA-256 checksums. During **Assure**, we assess data quality and clean each dataset while preserving the raw files. During **Integrate**, we combine the cleaned data using harmonized county identifiers and assess the resulting dataset for missing values, duplicate records, and geographic mismatches. During **Analyze**, we examine the relationships described in RQ1–RQ3. **Describe** includes the data dictionary, metadata, and documentation, while **Preserve** includes checksums, version control, and project releases. If integration reveals additional data quality problems, we will return to the relevant cleaning steps and rerun the workflow.
 
 ## Storage and Organization
-Data are stored as flat tabular files, organized by curation stage: `data/raw/` (unmodified API output in CSV and JSON, each with a `.sha256` checksum), `data/processed/` (cleaned source tables), `data/integrated/` (joined analysis table), `results/` (quality reports and figures), and `scripts/` (one script per stage). BLS and BEA use one row per county-year, and ACS uses one row per county. FIPS codes are stored as zero-padded strings so leading zeros are not lost.
+Data are stored as flat tabular files, organized by curation stage: `data/raw/` (unmodified API output in CSV and JSON, each with a `.sha256` checksum), `data/processed/` (cleaned source tables), `data/integrated/` (joined analysis table), `quality_assessment/` (data quality reports), `results/` (outputs and figures), and `scripts/` (one script per stage). BLS and BEA use one row per county-year, and ACS uses one row per county. FIPS codes are stored as zero-padded strings so leading zeros are not lost.
 
 ## Ethical Data Handling and Licensing
 All three sources are U.S. government works in the public domain, so the raw files can be redistributed in this repository. We will follow each API's terms of use. The data are county-level aggregates with no individual records, so privacy risk is low. API keys are kept out of the repository (see Data Acquisition). No Kaggle datasets are used.
