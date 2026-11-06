@@ -1,28 +1,40 @@
 BLS LAUS PRE-INTEGRATION QUALITY ASSESSMENT
+========================================================
+Assessment date: 2026-11-06
+Raw BLS source: data/raw/bls_laus_2015_2024_annual.json
+Raw BLS SHA-256: df53e8ec6fa5e32cc0c138fa4a5305bb438ae2cf4486f42c2dd536eee076c26e
+ACS geographic reference: data/raw/acs_2024_county_full.csv
+Study geography: 50 states and DC (Puerto Rico excluded)
+Study period: 2015-2024; primary predictor: 2015-2019 unemployment rate
 
-Source: bls_laus_2015_2024_annual.json
-Total observations: 128,800
-Unique county FIPS: 3,221
-Expected ACS counties (excluding Puerto Rico): 3,144
+SOURCE PROFILE
+Raw BLS observations: 128,800
+BLS API response statuses observed: 258
+BLS API responses not marked successful: 0
+Distinct observed series IDs: 12,884
+Distinct observed FIPS strings (including invalid/PR): 3,221
 Observed years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+ACS reference rows: 3,222
+ACS valid distinct counties excluding PR: 3,144
+ACS invalid FIPS rows: 0
+ACS duplicate FIPS rows: 0
 
-QUALITY CHECKS (counts may overlap)
-invalid_fips: 0
-invalid_series_id: 0
-invalid_year: 0
-invalid_measure: 0
-not_annual: 0
-missing_value: 312
-invalid_value: 0
-duplicate_key: 0
-puerto_rico: 3,120
-not_in_acs: 0
+1. ACCURACY: CODE AND VALUE VALIDITY
+Flags count raw observations; categories can overlap.
+  invalid_fips: 0
+  invalid_series_id: 0
+  invalid_measure: 0
+  missing_value: 0
+  non_numeric_value: 312
+  invalid_value: 0
+  All checks are screening rules, not proof of statistical accuracy.
 
-MISSING RECORDS AND GEOGRAPHIC COVERAGE
-Missing county-year-measure records: 80
-Counties entirely missing from BLS: 1
-
-Missing records by year:
+2. COMPLETENESS: OBSERVATIONS AND RESEARCH INPUTS
+Expected ACS-referenced county-year-measure keys: 125,760
+Unobserved keys versus 2024 ACS geography: 80 (0.06%)
+ACS counties with no BLS observations: 1
+  Examples of wholly unmatched ACS counties: 15005
+Missing keys by calendar year (each missing measure counts separately):
   2015: 12
   2016: 12
   2017: 12
@@ -33,21 +45,72 @@ Missing records by year:
   2022: 4
   2023: 4
   2024: 4
-
-MISSING NUMERICAL VALUES BY MEASURE
+Missing numerical BLS values by measure (valid annual keys only):
   unemployment_rate: 0
   unemployed: 0
   employed: 0
   labor_force: 0
+Usable 2015-2019 county-year unemployment rates: 15,705 / 15,720 (99.90%)
+Missing/unusable pre-2020 county-year rates: 15
+Counties with all five usable pre-2020 rates: 3,141
+Counties with fewer than five usable rates: 3
+  'Unusable' here means missing, duplicate, malformed, or outside allowed range.
+  Arithmetic warnings below are reviewed separately (not auto-excluded).
 
-PRE-2020 UNEMPLOYMENT RATE COVERAGE
-Missing or unusable 2015-2019 county-year rates: 15
-Counties with incomplete 2015-2019 rates: 3
+3. TIMELINESS: TIME WINDOW AND RESEARCH FITNESS
+Invalid/out-of-range year observations: 0
+Non-annual (not M13) observations: 0
+Last observed in-range annual year: 2024
+Distinct counties with an annual observation, by year:
+  2015: 3,141
+  2016: 3,141
+  2017: 3,141
+  2018: 3,141
+  2019: 3,141
+  2020: 3,143
+  2021: 3,143
+  2022: 3,143
+  2023: 3,143
+  2024: 3,143
+  The 2015-2019 data align with the pre-2020 research predictor.
+  The 2020-2024 data are retained for secondary comparisons.
+  Reference ACS 2024 5-year estimates pool 2020-2024; they are NOT annual rows.
+  A verified BLS release/vintage date is not established by the year field.
 
-NOTES
-Expected geographic coverage is based on ACS 2024.
-Puerto Rico is identified for exclusion during cleaning.
-Missing records may reflect geographic or historical differences.
-Missing and invalid numerical values are assessed separately.
-Arithmetic consistency checks require separate validation.
-No raw data were modified.
+4. CONSISTENCY: KEYS, GEOGRAPHY AND ARITHMETIC
+Duplicate annual county-year-measure observations: 0
+Puerto Rico observations outside study scope: 3,120
+BLS observations whose FIPS is not in ACS reference (excluding PR/invalid): 0
+Distinct unmatched BLS FIPS: 0
+  Examples of unmatched BLS FIPS: none
+County-years eligible for 4-measure arithmetic checks: 31,420
+Labor force != employed + unemployed beyond 2 people: 0
+Unemployment rate disagrees with 100*unemployed/labor_force beyond rounding tolerance: 0
+  Rate tolerance = 0.15 percentage points + 100/labor_force.
+  BLS rounding and independently averaged annual estimates may explain small differences.
+
+GEOGRAPHIC REVIEW AREAS (COUNTS ARE NOT AUTOMATIC ERRORS)
+  Alaska: 2 ACS counties with missing keys; 40 absent keys; 0 unmatched BLS FIPS
+  Connecticut: 0 ACS counties with missing keys; 0 absent keys; 0 unmatched BLS FIPS
+  Hawaii: 1 ACS counties with missing keys; 40 absent keys; 0 unmatched BLS FIPS
+  Virginia: 0 ACS counties with missing keys; 0 absent keys; 0 unmatched BLS FIPS
+  A 2024 ACS FIPS may not have existed throughout 2015-2024.
+  Investigate historic county-equivalent changes before exclusion or mapping.
+
+SAMPLE RECORDS TO INVESTIGATE (fips, year, measure, raw value)
+  invalid_series_id: none
+  not_annual: none
+  duplicate_key: none
+  missing_value: none
+  non_numeric_value: (72001, 2020, 03, -); (72001, 2020, 04, -); (72001, 2020, 05, -); (72001, 2020, 06, -); (72003, 2020, 03, -)
+  invalid_value: none
+  not_in_acs: none
+  arithmetic warnings: none
+
+INTERPRETATION AND NEXT STEPS
+  Raw BLS and ACS inputs were read without modification.
+  ACS matching is only a pre-integration feasibility check, not a join.
+  Coordinate FIPS harmonization with ACS and BEA cleaning before integration.
+  Investigate invalid/duplicate values and arithmetic warnings; do not auto-impute.
+  In the separate cleaning stage, document every rule and rerun assessment.
+  This report does not validate the geographic definition behind a matching FIPS.
