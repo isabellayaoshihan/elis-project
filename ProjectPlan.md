@@ -103,24 +103,28 @@ All three sources are U.S. government works in the public domain, so the raw fil
 ## Timeline
 | # | Task | Description | Owner | Target date | Module |
 |---|---|---|---|---|---|
-| 1 | Project plan | Write ProjectPlan.md and publish the project-plan release | All | Oct 12 | |
-| 2 | Lifecycle mapping | Relate the project to a data lifecycle model | Susu Tran | Oct 19 | M1 |
-| 3 | Data acquisition | One script per source with SHA-256 integrity checks; commit raw data to the repository | Isabella Yao | Oct 19 | M4 |
-| 4 | Storage and organization | Folder structure, naming conventions, file formats | Isabella Yao | Oct 21 | M2 |
-| 5 | Ethics and licensing review | Document license and terms of use for every source | Eric Shi | Oct 23 | M3 |
-| 6 | Profiling and pre-integration quality assessment | Profile each dataset; assess accuracy, completeness, timeliness, consistency | Eric Shi | Nov 2 | M10 |
-| 7 | Data cleaning | Scripts that address each issue found in task 6 | Eric Shi | Nov 9 | M11, M12 |
-| 8 | Data integration | Join cleaned datasets on county FIPS; document the integration schema | Lyric Li | Nov 14 | M7, M8 |
-| 9 | Post-integration quality assessment | Same four dimensions on the integrated dataset |  Lyric Li | Nov 17 | M10 |
-| 10 | Plan revision | Update ProjectPlan.md based on Milestone 2 feedback | All | Nov 17 | |
-| 11 | Status report | StatusReport.md with each member's own contribution summary; publish the status-report release | All | Nov 19 | |
-| 12 | Workflow automation | Snakemake or run_all script chaining single-purpose scripts from acquisition to analysis | Lyric Li | Nov 26 | M13 |
-| 13 | Analysis and visualization | Answer the research questions with at least one visualization | Susu Tran | Nov 30 | |
-| 14 | Environment and dependencies | requirements.txt, pip freeze output, relative paths throughout | Lyric Li | Dec 1 | M14 |
-| 15 | Metadata and documentation | Data dictionary, DCAT or Schema.org metadata file | Susu Tran | Dec 3 | M15 |
-| 16 | Licenses and references | License for our code, data license notes, citations for all data and software | Eric Shi | Dec 3 | M3 |
-| 17 | Reproducibility test | Fresh clone, clean install, full workflow run | Lyric Li | Dec 5 | M14 |
-| 18 | Final report and release | Complete README.md and publish the final-project release | All | Dec 7 | |
+## Timeline
+
+| # | Task | Description | Owner | Target date | Status | Module |
+|---|---|---|---|---|---|---|
+| 1 | Project plan | Write ProjectPlan.md and publish the project-plan release | All | Oct 12 | Completed | |
+| 2 | Lifecycle mapping | Relate the project to the DataONE data lifecycle model | Susu Tran | Oct 12 | Completed | M1 |
+| 3 | Data acquisition | One script per source with SHA-256 integrity checks; raw data committed to `data/raw/`.<br>**ACS and LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Isabella Yao, Susu Tran | Oct 11 | Completed | M4 |
+| 4 | Storage and organization | Folder structure by curation stage, naming conventions, file formats | Isabella Yao, Susu Tran | Oct 12 | Completed | M2 |
+| 5 | Ethics and licensing review | Document license and terms of use for every source | Susu Tran | Oct 12 | Completed | M3 |
+| 6 | Pre-integration quality assessment | One assessment script per dataset covering accuracy, completeness, timeliness, and consistency, including missing values, duplicates, data types, and FIPS code validity; results documented in `quality_assessment/`.<br>**ACS 2024 5-Year (Census Bureau):** Eric Shi<br>**LAUS 2015 to 2024 (BLS):** Isabella Yao<br>**CAGDP1 2015 to 2024 (BEA):** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M10 |
+| 7 | Data cleaning | One cleaning script per dataset, separate from the assessment script. Cleaned data is exported to `data/processed/` and the raw data in `data/raw/` is left unchanged.<br>**ACS:** Eric Shi<br>**LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M11, M12 |
+| 8 | Data integration | Join the cleaned ACS, LAUS, and BEA tables on 5-digit county FIPS, with LAUS and BEA aggregated to 2015 to 2019 predictors; log unmatched counties; document the integration schema. Started in a team working session on Nov 6. | All (led by Lyric Li) | Nov 14 | In progress | M7, M8 |
+| 9 | Post-integration quality assessment | Same four dimensions on the integrated dataset | Lyric Li | Nov 17 | Not started | M10 |
+| 10 | Plan revision | Revise ProjectPlan.md based on Milestone 2 feedback; make wording clearer and more consistent; update the timeline to reflect current progress | Lyric Li | Nov 6 | In progress | |
+| 11 | Status report | StatusReport.md with each member's own contribution summary; publish the status-report release | All | Nov 19 | Not started | |
+| 12 | Workflow automation | Snakemake or run_all script chaining single-purpose scripts from acquisition to analysis | Lyric Li | Nov 26 | Not started | M13 |
+| 13 | Analysis and visualization | Answer the research questions with at least one visualization | Susu Tran | Nov 30 | Not started | |
+| 14 | Environment and dependencies | requirements.txt, pip freeze output, relative paths throughout | Lyric Li | Dec 1 | Not started | M14 |
+| 15 | Metadata and documentation | Data dictionary, DCAT or Schema.org metadata file | Susu Tran | Dec 3 | Not started | M15 |
+| 16 | Licenses and references | License for our code, data license notes, citations for all data and software | Eric Shi | Dec 3 | Not started | M3 |
+| 17 | Reproducibility test | Fresh clone, clean install, full workflow run | Lyric Li | Dec 5 | Not started | M14 |
+| 18 | Final report and release | Complete README.md and publish the final-project release | All | Dec 7 | Not started | |
 
 ## Constraints
 The project faces several data quality and integration constraints across the ACS, BLS, and BEA datasets.
