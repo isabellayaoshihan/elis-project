@@ -1,0 +1,78 @@
+==============================================================================
+                   BLS LAUS | DATA CLEANING AND VALIDATION                    
+==============================================================================
+Assessment date: 2026-11-06
+Study area: 50 states and Washington, DC (territories excluded)
+Study years: 2015-2024 | Predictor window: 2015-2019
+
+01  SOURCE RECORD DISPOSITION
+------------------------------------------------------------------------------
+  Original raw BLS observations                                   128,800
+  Raw distinct BLS county FIPS (including Puerto Rico)              3,221
+  Raw distinct Puerto Rico FIPS                                        78
+  Excluded observations (unique rows)                               3,120
+    Puerto Rico observations                                        3,120
+    Other out-of-scope state/territory observations                     0
+    Structurally invalid or nonannual observations                      0
+  In-scope observations before deduplication                      125,680
+  Exact duplicate observations removed                                  0
+  Conflicting duplicate keys remaining                                  0
+  Unique in-scope source observations                             125,680
+
+Exclusion-reason counts can overlap; total excluded counts rows once.
+
+02  HANDLING OF MISSING AND INVALID VALUES
+------------------------------------------------------------------------------
+  Blank or null values retained as NA                                   0
+  Recognized missing markers retained as NA                             0
+  Invalid numeric values converted to NA                                0
+  Other nonnumeric text remaining                                       0
+
+Missing markers (e.g., '-') are not zeros. No values were imputed.
+Only in-scope records are included in the counts above.
+
+03  RESHAPING AND COUNTY-YEAR COVERAGE
+------------------------------------------------------------------------------
+  BLS-observed county FIPS retained                                 3,143
+  Observed county-year rows before reindexing                      31,420
+  All-NA county-year placeholder rows added                            10
+  Final cleaned county-year rows                                   31,430
+  ACS-only FIPS deliberately NOT added                                  1
+
+One output row per BLS-observed county and year.
+Placeholders preserve absent years but do not create BLS estimates.
+Geographic mismatches are handled later during integration.
+  ACS-only FIPS not added: 15005
+  Missing-year placeholders (FIPS: years):
+    02063: 2015, 2016, 2017, 2018, 2019
+    02066: 2015, 2016, 2017, 2018, 2019
+
+04  RESEARCH READINESS | 2015-2019
+------------------------------------------------------------------------------
+  Expected BLS-footprint county-year rates                         15,715
+  Usable nonmissing unemployment rates                             15,705
+  Missing annual unemployment rates                                    10
+  Counties with all five usable annual rates                        3,141
+
+Rates are preserved as published; no five-year means calculated here.
+Historical boundary differences require review before integration.
+
+05  POST-CLEANING VALIDATION AND PROVENANCE
+------------------------------------------------------------------------------
+  County-year keys unique: PASS
+  Year/FIPS format and study scope: PASS
+  Numeric range/whole-person checks: PASS
+  Expected row and column counts: PASS
+  CSV round-trip value comparison: PASS
+  Original BLS JSON was not modified.
+
+  Input: data/raw/bls_laus_2015_2024_annual.json
+  SHA-256: df53e8ec6fa5e32cc0c138fa4a5305bb438ae2cf4486f42c2dd536eee076c26e
+  Script: scripts/bls_clean.py
+  Output: data/processed/bls_laus_clean.csv
+  Report: quality_assessment/bls_cleaning_report.txt
+  Read cleaned CSV with dtype={'fips': 'string'} to keep leading zeros.
+
+==============================================================================
+                            END OF CLEANING REPORT                            
+==============================================================================
