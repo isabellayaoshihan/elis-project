@@ -1,119 +1,159 @@
-"""IS477 Milestone 3: BLS LAUS pre-integration data quality assessment.
 
-Assess the original BLS JSON without cleaning or modifying it.
-The 2024 ACS county FIPS list is used only as a geographic coverage reference.
+"""IS477 - BLS LAUS pre-integration data quality assessment.
 
-Output: quality_assessment/bls_quality_assessment.txt
-Run: python scripts/bls_quality_assessment.py
+Assess raw BLS annual county observations; compare FIPS coverage with ACS
+only in a separate integration-readiness section. No cleaning or joining.
+
+Run from repository root: python scripts/bls_quality_assessment.py
+Writes (overwrites): quality_assessment/bls_quality_report.txt
 """
 
 import hashlib
 import json
+import textwrap
 from datetime import date
 from pathlib import Path
 
 import pandas as pd
 
 
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw"
-RESULTS_DIR = ROOT / "quality_assessment"
+BLS_PATH = ROOT / "data/raw/bls_laus_2015_2024_annual.json"
+ACS_PATH = ROOT / "data/raw/acs_2024_county_full.csv"
+OUTPUT = ROOT / "quality_assessment/bls_quality_report.txt"
 
-BLS_PATH = RAW_DIR / "bls_laus_2015_2024_annual.json"
-ACS_PATH = RAW_DIR / "acs_2024_county_full.csv"
+YEARS = list(range(2015, 2025))
+PRE_YEARS = list(range(2015, 2020))
 
-YEARS = tuple(range(2015, 2025))
-PRE_YEARS = tuple(range(2015, 2020))
 MEASURES = {
-    "03": "unemployment_rate",
-    "04": "unemployed",
-    "05": "employed",
-    "06": "labor_force",
+    "03": "Unemployment rate (%)",
+    "04": "Unemployed (persons)",
+    "05": "Employed (persons)",
+    "06": "Labor force (persons)",
 }
 
-# Screening tolerances, not official BLS error thresholds.
-LABOR_FORCE_TOL = 2          # Persons, allowing for rounding of annual averages
-RATE_TOL_PP = 0.15           # Percentage points, plus rounding of count inputs
-SAMPLE_SIZE = 5
+MISSING_TOKENS = {"-", "--", "N/A", "NA", "NULL", "NAN", "(NA)"}
+
+# Diagnostic thresholds, not official BLS error thresholds.
+LF_TOL = 2.0
+RATE_TOL = 0.15
+
+REPORT_WIDTH = 88
 
 
-def file_sha256(path):
-    """Document the exact input snapshot without changing it."""
+# ============================================================
+# 1. DATA LOADING AND PROFILING
+# ============================================================
+
+def sha256(path):
+    """Calculate a source-file checksum without modifying the file."""
     digest = hashlib.sha256()
+
     with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+
     return digest.hexdigest()
 
 
-def load_bls():
-    """Read BLS API response batches into a diagnostic long-form table."""
-    with BLS_PATH.open("r", encoding="utf-8") as stream:
+def read_bls():
+    """Load nested BLS API responses into a diagnostic long-form table."""
+
+    with BLS_PATH.open(encoding="utf-8") as stream:
         raw = json.load(stream)
 
-    rows = []
-    api_statuses = []
+    records = []
+    statuses = []
 
-    def visit(obj, series_id=None):
-        if isinstance(obj, list):
-            for item in obj:
-                visit(item, series_id)
-            return
-        if not isinstance(obj, dict):
+    def walk(node, inherited_sid=""):
+        if isinstance(node, list):
+            for item in node:
+                walk(item, inherited_sid)
             return
 
-        if isinstance(obj.get("status"), str) and obj["status"].startswith("REQUEST_"):
-            api_statuses.append(obj["status"])
+        if not isinstance(node, dict):
+            return
 
-        sid = obj.get("seriesID") or obj.get("seriesId") or series_id
+        status = node.get("status")
 
-        # Include an observation even when the value field is absent.
-        if "year" in obj and ("period" in obj or "value" in obj):
-            rows.append({
+        if isinstance(status, str) and status.startswith("REQUEST_"):
+            statuses.append(status)
+
+        sid = (
+            node.get("seriesID")
+            or node.get("seriesId")
+            or inherited_sid
+        )
+
+        if "year" in node and ("value" in node or "period" in node):
+            records.append({
                 "series_id": str(sid or "").strip(),
-                "year_raw": obj.get("year"),
-                "period": obj.get("period"),
-                "value_raw": obj.get("value"),
+                "year_raw": node.get("year"),
+                "period_raw": node.get("period"),
+                "value_raw": node.get("value"),
             })
             return
 
         for key in ("Results", "results", "series", "data", "responses"):
-            if key in obj:
-                visit(obj[key], sid)
+            if key in node:
+                walk(node[key], sid)
 
-    visit(raw)
+    walk(raw)
 
-    if not rows:
-        raise ValueError("No BLS data records found. Check the raw JSON structure.")
+    if not records:
+        raise ValueError(
+            "No BLS observations found. Check the raw JSON structure."
+        )
 
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(records)
 
-    # Extract county FIPS and measure codes.
+    # Extract identifiers without altering the raw records.
     df["fips"] = df["series_id"].str[5:10]
     df["measure"] = df["series_id"].str[-2:]
 
-    # Convert values for assessment without changing the raw file.
-    df["year"] = pd.to_numeric(df["year_raw"], errors="coerce")
-    df["period"] = df["period"].astype("string").str.strip()
+    df["year"] = pd.to_numeric(
+        df["year_raw"],
+        errors="coerce"
+    )
 
+    df["period"] = (
+        df["period_raw"]
+        .astype("string")
+        .str.strip()
+    )
+
+    # Classify unavailable values before numeric conversion.
     text = df["value_raw"].astype("string").str.strip()
 
-    df["missing_value"] = (text.isna() | text.eq("")).fillna(False)
+    df["empty_value"] = (
+        text.isna() | text.eq("")
+    ).fillna(False)
+
+    df["missing_marker"] = (
+        text.str.upper().isin(MISSING_TOKENS)
+    ).fillna(False)
 
     df["value"] = pd.to_numeric(
         text.str.replace(",", "", regex=False),
         errors="coerce"
     )
 
-    df["non_numeric_value"] = ~df["missing_value"] & df["value"].isna()
+    df["unparseable_value"] = (
+        df["value"].isna()
+        & ~df["empty_value"]
+        & ~df["missing_marker"]
+    )
 
-    df.attrs["api_statuses"] = api_statuses
-
-    return df
+    return df, statuses
 
 
-def load_acs_counties():
-    """Use ACS geography to assess join feasibility; this is NOT integration."""
+def read_acs_fips():
+    """Load ACS county FIPS for a separate integration-readiness check."""
+
     acs = pd.read_csv(
         ACS_PATH,
         usecols=["county_fips"],
@@ -127,537 +167,1070 @@ def load_acs_counties():
         & fips.ne("00000")
     )
 
-    outside_pr = ~fips.str.startswith("72", na=False)
+    non_pr = ~fips.str.startswith("72", na=False)
 
-    counties = sorted(
-        fips.loc[valid & outside_pr].dropna().unique()
+    counties = set(
+        fips.loc[valid & non_pr].dropna()
     )
 
-    if not counties:
-        raise ValueError("No valid non-Puerto Rico county FIPS found in ACS.")
-
-    return counties, {
-        "acs_rows": len(acs),
-        "invalid_acs_fips": int((~valid).sum()),
-        "duplicate_acs_fips": int(fips.loc[valid].duplicated().sum()),
+    info = {
+        "rows": len(acs),
+        "invalid": int((~valid).sum()),
+        "duplicates": int(fips.loc[valid].duplicated().sum()),
     }
 
+    return counties, info
 
-def assess(df, counties):
-    """Return row-level flags, completeness gaps, and arithmetic diagnostics."""
+
+# ============================================================
+# 2. QUALITY ASSESSMENT
+# ============================================================
+
+def product_keys(counties, years, measures):
+    """Generate expected county-year-measure combinations."""
+
+    return pd.MultiIndex.from_product(
+        [sorted(counties), years, measures],
+        names=["fips", "year", "measure"]
+    ).to_frame(index=False)
+
+
+def unobserved(expected, actual, keys):
+    """Identify expected keys absent from the observed dataset."""
+
+    merged = expected.merge(
+        actual[keys].drop_duplicates(),
+        how="left",
+        on=keys,
+        indicator=True
+    )
+
+    return merged.loc[
+        merged["_merge"].eq("left_only"),
+        keys
+    ].copy()
+
+
+def assess(df, acs_counties):
+    """Assess accuracy, completeness, timeliness, and consistency."""
+
     df = df.copy()
 
-    # ==========================================================
-    # 1. ACCURACY: CODE AND VALUE VALIDITY
-    # ==========================================================
+    # --------------------------------------------------------
+    # A. IDENTIFIER AND NUMERIC VALIDITY
+    # --------------------------------------------------------
 
-    # Check county FIPS format.
     df["invalid_fips"] = (
         ~df["fips"].str.fullmatch(r"\d{5}", na=False)
         | df["fips"].eq("00000")
     )
 
-    # Check BLS LAUS county series identifier.
-    df["invalid_series_id"] = ~df["series_id"].str.fullmatch(
+    df["invalid_series"] = ~df["series_id"].str.fullmatch(
         r"LAUCN\d{5}0{8}(03|04|05|06)",
         na=False
     )
 
-    # Validate years, measure codes and annual-average periods.
-    df["invalid_year"] = ~df["year"].isin(YEARS)
-
     df["invalid_measure"] = ~df["measure"].isin(MEASURES)
+
+    df["invalid_year"] = (
+        ~df["year"].isin(YEARS)
+        | ~df["year_raw"].astype("string").str.fullmatch(
+            r"\d{4}",
+            na=False
+        )
+    )
 
     df["not_annual"] = ~df["period"].eq("M13").fillna(False)
 
-    # Flag Puerto Rico, which is outside the study scope.
-    df["puerto_rico"] = df["fips"].str.startswith("72", na=False)
-
-    # Validate numerical values.
-    is_rate = df["measure"].eq("03")
-    is_count = df["measure"].isin(("04", "05", "06"))
-    is_labor_force = df["measure"].eq("06")
-
-    number = df["value"]
-
-    df["invalid_value"] = (
-        # Unemployment rate must be between 0 and 100.
-        (is_rate & number.notna() & ~number.between(0, 100))
-
-        # Employment-related counts cannot be negative.
-        | (is_count & number.notna() & (number < 0))
-
-        # Labor force denominator cannot be zero.
-        | (is_labor_force & number.notna() & (number == 0))
-
-        # Published counts should be whole numbers.
-        | (is_count & number.notna() & number.mod(1).ne(0))
-
-        # Reject infinite values.
-        | number.isin((float("inf"), float("-inf")))
+    df["puerto_rico"] = (
+        df["fips"].str.startswith("72", na=False)
     )
 
-    # ==========================================================
-    # 2. CONSISTENCY: DUPLICATE KEYS
-    # ==========================================================
+    rate = df["measure"].eq("03")
+    count = df["measure"].isin(("04", "05", "06"))
+    value = df["value"]
 
-    key_flags = [
+    df["invalid_numeric"] = (
+        (rate & value.notna() & ~value.between(0, 100))
+        | (
+            count
+            & value.notna()
+            & ((value < 0) | value.mod(1).ne(0))
+        )
+        | (df["measure"].eq("06") & value.eq(0))
+        | value.isin((float("inf"), -float("inf")))
+    )
+
+    # --------------------------------------------------------
+    # B. KEY CONSISTENCY
+    # --------------------------------------------------------
+
+    structure_flags = [
         "invalid_fips",
-        "invalid_series_id",
-        "invalid_year",
+        "invalid_series",
         "invalid_measure",
+        "invalid_year",
         "not_annual",
     ]
 
-    key_ok = ~df[key_flags].any(axis=1)
+    df["valid_key"] = ~df[structure_flags].any(axis=1)
 
     df["duplicate_key"] = False
 
-    df.loc[key_ok, "duplicate_key"] = df.loc[key_ok].duplicated(
+    ok = df["valid_key"]
+
+    df.loc[ok, "duplicate_key"] = df.loc[ok].duplicated(
         ["fips", "year", "measure"],
         keep=False
     )
 
-    # ==========================================================
-    # 3. GEOGRAPHIC COMPATIBILITY WITH ACS
-    # ==========================================================
-
-    # Flag geographic mismatches but do not exclude or remap them.
-    df["not_in_acs"] = (
-        ~df["fips"].isin(counties)
-        & ~df["puerto_rico"]
-        & ~df["invalid_fips"]
+    # Valid, unique, usable numerical observations.
+    df["usable_numeric"] = (
+        df["valid_key"]
+        & ~df["duplicate_key"]
+        & ~df["empty_value"]
+        & ~df["missing_marker"]
+        & ~df["unparseable_value"]
+        & ~df["invalid_numeric"]
     )
 
-    # ==========================================================
-    # 4. COMPLETENESS: COUNTY-YEAR-MEASURE RECORDS
-    # ==========================================================
+    # --------------------------------------------------------
+    # C. BLS GEOGRAPHIC FOOTPRINT AND COMPLETENESS
+    # --------------------------------------------------------
 
-    # Identify observed structurally valid annual records.
-    observed_keys = df.loc[
-        key_ok & ~df["puerto_rico"],
+    bls_counties = set(
+        df.loc[
+            ~df["invalid_fips"]
+            & ~df["puerto_rico"]
+            & ~df["invalid_series"],
+            "fips"
+        ]
+    )
+
+    observed = df.loc[
+        df["valid_key"] & ~df["puerto_rico"],
         ["fips", "year", "measure"]
     ].drop_duplicates()
 
-    # Expected records based on ACS 2024 county geography.
-    expected = pd.MultiIndex.from_product(
-        [counties, YEARS, list(MEASURES)],
-        names=["fips", "year", "measure"],
-    ).to_frame(index=False)
-
-    missing = expected.merge(
-        observed_keys,
-        on=["fips", "year", "measure"],
-        how="left",
-        indicator=True,
-    )
-
-    missing = missing.loc[
-        missing["_merge"].eq("left_only"),
+    usable = df.loc[
+        df["usable_numeric"] & ~df["puerto_rico"],
         ["fips", "year", "measure"]
-    ].copy()
-
-    # ==========================================================
-    # 5. RESEARCH-SPECIFIC COMPLETENESS: 2015-2019 RATES
-    # ==========================================================
-
-    # A usable unemployment-rate observation must have:
-    # - valid structure
-    # - valid year
-    # - no duplicate key
-    # - valid numerical value
-    # - geographic coverage consistent with ACS
-    # - year within 2015-2019
-
-    usable_rate_keys = df.loc[
-        key_ok
-        & ~df["puerto_rico"]
-        & ~df["not_in_acs"]
-        & ~df["duplicate_key"]
-        & ~df["missing_value"]
-        & ~df["non_numeric_value"]
-        & ~df["invalid_value"]
-        & df["measure"].eq("03")
-        & df["year"].isin(PRE_YEARS),
-        ["fips", "year"],
     ].drop_duplicates()
 
-    expected_rates = pd.MultiIndex.from_product(
-        [counties, PRE_YEARS],
-        names=["fips", "year"]
-    ).to_frame(index=False)
-
-    pre_gaps = expected_rates.merge(
-        usable_rate_keys,
-        on=["fips", "year"],
-        how="left",
-        indicator=True,
+    # BLS-only completeness baseline.
+    expected_bls = product_keys(
+        bls_counties,
+        YEARS,
+        list(MEASURES)
     )
 
-    pre_gaps = pre_gaps.loc[
-        pre_gaps["_merge"].eq("left_only"),
-        ["fips", "year"]
-    ].copy()
+    missing_bls = unobserved(
+        expected_bls,
+        observed,
+        ["fips", "year", "measure"]
+    )
 
-    # ==========================================================
-    # 6. ACCURACY / CONSISTENCY: ARITHMETIC CHECKS
-    # ==========================================================
+    pre_bls = product_keys(
+        bls_counties,
+        PRE_YEARS,
+        ["03"]
+    )
 
-    # Compare labor force, employed, unemployed and unemployment
-    # rate only for valid, unique, numeric observations.
+    unusable_pre_bls = unobserved(
+        pre_bls,
+        usable,
+        ["fips", "year", "measure"]
+    )
 
-    comparable = df.loc[
-        key_ok
-        & ~df["puerto_rico"]
-        & ~df["duplicate_key"]
-        & ~df["missing_value"]
-        & ~df["non_numeric_value"]
-        & ~df["invalid_value"],
-        ["fips", "year", "measure", "value"],
+    # --------------------------------------------------------
+    # D. ACS-REFERENCED INTEGRATION READINESS
+    # --------------------------------------------------------
+
+    expected_acs = product_keys(
+        acs_counties,
+        YEARS,
+        list(MEASURES)
+    )
+
+    missing_acs = unobserved(
+        expected_acs,
+        observed,
+        ["fips", "year", "measure"]
+    )
+
+    pre_acs = product_keys(
+        acs_counties,
+        PRE_YEARS,
+        ["03"]
+    )
+
+    unusable_pre_acs = unobserved(
+        pre_acs,
+        usable,
+        ["fips", "year", "measure"]
+    )
+
+    # --------------------------------------------------------
+    # E. INTERNAL ARITHMETIC CONSISTENCY
+    # --------------------------------------------------------
+
+    numeric = df.loc[
+        df["usable_numeric"] & ~df["puerto_rico"],
+        ["fips", "year", "measure", "value"]
     ]
 
-    # Reshape measures into separate columns for comparison.
-    wide = comparable.pivot(
+    wide = numeric.pivot(
         index=["fips", "year"],
         columns="measure",
         values="value"
     ).reindex(columns=list(MEASURES))
 
-    arithmetic = wide.dropna(subset=list(MEASURES)).copy()
+    # Labor force approximately equals employed + unemployed.
+    counts = wide.dropna(
+        subset=["04", "05", "06"]
+    ).copy()
 
-    # Labor force should approximately equal employed + unemployed.
-    arithmetic["labor_force_difference"] = (
-        arithmetic["06"] - arithmetic["05"] - arithmetic["04"]
+    counts["difference"] = (
+        counts["06"] - counts["05"] - counts["04"]
     ).abs()
 
-    # Expected unemployment rate based on employment-related counts.
-    arithmetic["expected_rate"] = (
-        100.0 * arithmetic["04"] / arithmetic["06"]
-    )
+    counts["warning"] = counts["difference"].gt(LF_TOL)
 
-    arithmetic["rate_difference_pp"] = (
-        arithmetic["03"] - arithmetic["expected_rate"]
+    # Unemployment rate approximately equals unemployed / labor force.
+    rates = wide.dropna(
+        subset=["03", "04", "06"]
+    ).copy()
+
+    rates = rates.loc[rates["06"] > 0].copy()
+
+    rates["difference"] = (
+        rates["03"] - 100 * rates["04"] / rates["06"]
     ).abs()
 
-    # Small counties can be more sensitive to rounding.
-    arithmetic["rate_tolerance_pp"] = (
-        RATE_TOL_PP + 100.0 / arithmetic["06"]
+    rates["tolerance"] = RATE_TOL + 100 / rates["06"]
+
+    rates["warning"] = rates["difference"].gt(
+        rates["tolerance"]
     )
 
-    arithmetic["labor_force_warning"] = (
-        arithmetic["labor_force_difference"] > LABOR_FORCE_TOL
-    )
-
-    arithmetic["rate_warning"] = (
-        arithmetic["rate_difference_pp"]
-        > arithmetic["rate_tolerance_pp"]
-    )
-
-    # ==========================================================
-    # 7. COLLECT QUALITY FLAGS
-    # ==========================================================
-
-    flags = [
-        "invalid_fips",
-        "invalid_series_id",
-        "invalid_year",
-        "invalid_measure",
-        "not_annual",
-        "missing_value",
-        "non_numeric_value",
-        "invalid_value",
-        "duplicate_key",
-        "puerto_rico",
-        "not_in_acs",
-    ]
-
-    return df, missing, pre_gaps, arithmetic, flags
+    return {
+        "df": df,
+        "bls_counties": bls_counties,
+        "acs_counties": acs_counties,
+        "observed": observed,
+        "usable": usable,
+        "expected_bls": expected_bls,
+        "missing_bls": missing_bls,
+        "pre_bls": pre_bls,
+        "unusable_pre_bls": unusable_pre_bls,
+        "expected_acs": expected_acs,
+        "missing_acs": missing_acs,
+        "pre_acs": pre_acs,
+        "unusable_pre_acs": unusable_pre_acs,
+        "counts": counts,
+        "rates": rates,
+    }
 
 
-def examples(df, flag, limit=SAMPLE_SIZE):
-    """Return a few problematic observations for the report."""
-    rows = df.loc[
-        df[flag],
-        ["fips", "year_raw", "measure", "value_raw"]
-    ].head(limit)
+# ============================================================
+# 3. REPORT GENERATION
+# ============================================================
 
-    if rows.empty:
-        return "none"
+def build_report(result, statuses, acs_info):
+    """Create a consistently formatted plain-text quality report."""
 
-    return "; ".join(
-        f"({row.fips}, {row.year_raw}, {row.measure}, {row.value_raw})"
-        for row in rows.itertuples(index=False)
-    )
+    d = result["df"]
+    bls = result["bls_counties"]
+    acs = result["acs_counties"]
 
+    observed = result["observed"]
+    usable = result["usable"]
 
-def make_report(
-    df, counties, acs_info, assessed, missing,
-    pre_gaps, arithmetic, flags
-):
-    """Generate a readable quality assessment report."""
+    missing_bls = result["missing_bls"]
+    missing_acs = result["missing_acs"]
 
-    count = lambda flag: int(assessed[flag].sum())
+    pre_bls = result["pre_bls"]
+    pre_acs = result["pre_acs"]
 
-    years = sorted(
-        assessed.loc[
-            assessed["year"].isin(YEARS), "year"
-        ].dropna().unique().astype(int).tolist()
-    )
+    gaps_bls = result["unusable_pre_bls"]
+    gaps_acs = result["unusable_pre_acs"]
 
-    observed_counties = set(
-        assessed.loc[
-            ~assessed["invalid_fips"]
-            & ~assessed["puerto_rico"],
-            "fips"
-        ]
-    )
+    counts = result["counts"]
+    rates = result["rates"]
 
-    no_bls = sorted(set(counties) - observed_counties)
+    def n(column):
+        return int(d[column].sum())
 
-    unmatched = sorted(
-        assessed.loc[assessed["not_in_acs"], "fips"].unique()
-    )
+    def fmt(value):
+        return f"{value:,}"
 
-    complete_rate_counties = (
-        len(counties) - pre_gaps["fips"].nunique()
-    )
+    def pct(numerator, denominator):
+        if not denominator:
+            return "N/A"
+        return f"{numerator / denominator * 100:,.2f}%"
 
-    annual_coverage = assessed.loc[
-        ~assessed["invalid_series_id"]
-        & ~assessed["invalid_year"]
-        & ~assessed["not_annual"]
-        & ~assessed["puerto_rico"],
-        ["fips", "year"],
-    ].drop_duplicates()
+    lines = []
 
-    lines = [
-        "BLS LAUS PRE-INTEGRATION QUALITY ASSESSMENT",
-        "=" * 56,
-        f"Assessment date: {date.today().isoformat()}",
-        f"Raw BLS source: data/raw/{BLS_PATH.name}",
-        f"Raw BLS SHA-256: {file_sha256(BLS_PATH)}",
-        f"ACS geographic reference: data/raw/{ACS_PATH.name}",
-        "Study geography: 50 states and DC (Puerto Rico excluded)",
-        "Study period: 2015-2024; primary predictor: 2015-2019 unemployment rate",
-        "",
-        "SOURCE PROFILE",
-        f"Raw BLS observations: {len(df):,}",
-        f"BLS API response statuses observed: {len(df.attrs.get('api_statuses', [])):,}",
-        f"BLS API responses not marked successful: "
-        f"{sum(s != 'REQUEST_SUCCEEDED' for s in df.attrs.get('api_statuses', [])):,}",
-        f"Distinct observed series IDs: {df['series_id'].nunique():,}",
-        f"Distinct observed FIPS strings (including invalid/PR): {df['fips'].nunique():,}",
-        f"Observed years: {years}",
-        f"ACS reference rows: {acs_info['acs_rows']:,}",
-        f"ACS valid distinct counties excluding PR: {len(counties):,}",
-        f"ACS invalid FIPS rows: {acs_info['invalid_acs_fips']:,}",
-        f"ACS duplicate FIPS rows: {acs_info['duplicate_acs_fips']:,}",
-        "",
-        "1. ACCURACY: CODE AND VALUE VALIDITY",
-        "Flags count raw observations; categories can overlap.",
-    ]
+    # --------------------------------------------------------
+    # FORMATTING HELPERS
+    # --------------------------------------------------------
 
-    for flag in [
-        "invalid_fips",
-        "invalid_series_id",
-        "invalid_measure",
-        "missing_value",
-        "non_numeric_value",
-        "invalid_value",
-    ]:
-        lines.append(f"  {flag}: {count(flag):,}")
+    def blank():
+        lines.append("")
+
+    def title(text):
+        lines.extend([
+            "=" * REPORT_WIDTH,
+            text.center(REPORT_WIDTH),
+            "=" * REPORT_WIDTH,
+        ])
+
+    def section(number, heading):
+        blank()
+        lines.extend([
+            f"{number:02d}  {heading.upper()}",
+            "-" * REPORT_WIDTH,
+        ])
+
+    def sub(heading):
+        blank()
+        lines.append(f"  {heading}")
+        lines.append("  " + "~" * (REPORT_WIDTH - 4))
+
+    def info(text):
+        wrapped = textwrap.wrap(
+            text,
+            width=REPORT_WIDTH - 4,
+            initial_indent="  ",
+            subsequent_indent="  ",
+        )
+        lines.extend(wrapped or ["  "])
+
+    def metric(label, value):
+        """Align labels and statistics without truncating content."""
+
+        if len(label) > 56:
+            info(label)
+            lines.append(f"  {'':<56} {str(value):>25}")
+        else:
+            lines.append(f"  {label:<56} {str(value):>25}")
+
+    def table(headers, rows, widths):
+        """Produce a text table with consistent column alignment."""
+
+        def format_row(cells):
+            parts = []
+
+            for index, (cell, width) in enumerate(zip(cells, widths)):
+                text = str(cell)
+
+                if index == 0:
+                    parts.append(text[:width].ljust(width))
+                else:
+                    parts.append(text[:width].rjust(width))
+
+            return "  " + "  ".join(parts)
+
+        lines.append(format_row(headers))
+
+        lines.append(
+            "  " + "  ".join("-" * width for width in widths)
+        )
+
+        for row in rows:
+            lines.append(format_row(row))
+
+    # ========================================================
+    # REPORT HEADER
+    # ========================================================
+
+    title("BLS LAUS | PRE-INTEGRATION DATA QUALITY ASSESSMENT")
 
     lines.extend([
-        "  All checks are screening rules, not proof of statistical accuracy.",
-        "",
-        "2. COMPLETENESS: OBSERVATIONS AND RESEARCH INPUTS",
-        f"Expected ACS-referenced county-year-measure keys: {len(counties)*len(YEARS)*len(MEASURES):,}",
-        f"Unobserved keys versus 2024 ACS geography: {len(missing):,} "
-        f"({100 * len(missing) / (len(counties)*len(YEARS)*len(MEASURES)):.2f}%)",
-        f"ACS counties with no BLS observations: {len(no_bls):,}",
-        f"  Examples of wholly unmatched ACS counties: {', '.join(no_bls[:10]) or 'none'}",
-        "Missing keys by calendar year (each missing measure counts separately):",
+        "  Study: US county labor-market conditions and interstate migration",
+        "  BLS: Local Area Unemployment Statistics | annual county observations",
+        f"  Assessment date: {date.today():%Y-%m-%d}  |  Coverage: 2015-2024",
+        "  Scope: raw BLS quality; ACS reference used only in Section 07",
     ])
 
-    by_year = missing.groupby("year").size()
+    # ========================================================
+    # 01. EXECUTIVE SUMMARY
+    # ========================================================
 
-    for year in YEARS:
-        lines.append(f"  {year}: {int(by_year.get(year, 0)):,}")
+    section(1, "Executive summary")
 
-    lines.append(
-        "Missing numerical BLS values by measure (valid annual keys only):"
+    raw_fips = d["fips"].nunique()
+
+    pr_fips = d.loc[
+        d["puerto_rico"], "fips"
+    ].nunique()
+
+    metric("Raw BLS observations", fmt(len(d)))
+    metric("Distinct BLS FIPS (including Puerto Rico)", fmt(raw_fips))
+    metric("BLS FIPS outside Puerto Rico", fmt(len(bls)))
+    metric("Puerto Rico FIPS", fmt(pr_fips))
+
+    metric(
+        "Usable 2015-2019 unemployment-rate keys (BLS footprint)",
+        f"{fmt(len(pre_bls) - len(gaps_bls))} / {fmt(len(pre_bls))}"
     )
 
-    usable_keys = ~assessed[
+    metric(
+        "2015-2019 rate coverage (BLS footprint)",
+        pct(len(pre_bls) - len(gaps_bls), len(pre_bls))
+    )
+
+    blank()
+
+    unavailable_total = (
+        n("empty_value")
+        + n("missing_marker")
+        + n("unparseable_value")
+    )
+
+    info(
+        f"FINDINGS: {fmt(n('duplicate_key'))} duplicate rows; "
+        f"{fmt(n('invalid_numeric'))} invalid numeric values; "
+        f"{fmt(unavailable_total)} raw observations with unavailable "
+        f"numeric values. {fmt(len(gaps_bls))} BLS-footprint "
+        "pre-2020 unemployment-rate keys are absent or unusable "
+        "(historical geography may explain some gaps)."
+    )
+
+    info(
+        "IMPORTANT: This is an assessment, not a cleaning or "
+        "integration step. No input records were changed."
+    )
+
+    # ========================================================
+    # 02. DATASET PROFILE AND PROVENANCE
+    # ========================================================
+
+    section(2, "Dataset profile and provenance")
+
+    metric("Distinct series IDs", fmt(d["series_id"].nunique()))
+    metric("Requested calendar years", "2015-2024 (10)")
+
+    metric(
+        "BLS API responses with status field",
+        fmt(len(statuses))
+    )
+
+    metric(
+        "API responses with non-success status",
+        fmt(sum(s != "REQUEST_SUCCEEDED" for s in statuses))
+    )
+
+    metric(
+        "Puerto Rico raw observations (out of study scope)",
+        fmt(n("puerto_rico"))
+    )
+
+    sub("Measure inventory | all raw observations")
+
+    table(
+        ["Code / measure", "Observations"],
         [
-            "invalid_fips",
-            "invalid_series_id",
-            "invalid_year",
-            "invalid_measure",
-            "not_annual",
-            "puerto_rico",
-        ]
-    ].any(axis=1)
+            (
+                f"{code}  {name}",
+                fmt(int(d["measure"].eq(code).sum()))
+            )
+            for code, name in MEASURES.items()
+        ],
+        [55, 16]
+    )
 
-    missing_by_measure = assessed.loc[
-        usable_keys & assessed["missing_value"]
-    ].groupby("measure").size()
+    info(
+        "Each observation is intended to represent one "
+        "county-equivalent, year, and measure. The raw BLS "
+        "series ID supplies the FIPS and measure code."
+    )
 
-    for measure, label in MEASURES.items():
-        lines.append(
-            f"  {label}: {int(missing_by_measure.get(measure, 0)):,}"
+    # ========================================================
+    # 03. ACCURACY
+    # ========================================================
+
+    section(3, "Accuracy | identifiers and numerical validity")
+
+    sub("Validation results | all raw observations")
+
+    checks = [
+        ("Invalid 5-digit county FIPS", n("invalid_fips")),
+        ("Invalid LAUCN county series ID", n("invalid_series")),
+        ("Unrecognized measure code", n("invalid_measure")),
+        ("Empty or null value", n("empty_value")),
+        ("Recognized missing-value marker (e.g., '-')", n("missing_marker")),
+        ("Other unparseable numeric text", n("unparseable_value")),
+        ("Numeric value outside validation rules", n("invalid_numeric")),
+    ]
+
+    table(
+        ["Rule / condition", "Flagged"],
+        [(name, fmt(number)) for name, number in checks],
+        [59, 12]
+    )
+
+    sub("Missing or nonnumeric values by geography")
+
+    geography = [
+        ("Puerto Rico", d["puerto_rico"]),
+        ("Study area (excluding PR)", ~d["puerto_rico"]),
+    ]
+
+    table(
+        ["Geography", "Blank", "Marker", "Other text", "Bad number"],
+        [
+            (
+                label,
+                fmt(int(d.loc[mask, "empty_value"].sum())),
+                fmt(int(d.loc[mask, "missing_marker"].sum())),
+                fmt(int(d.loc[mask, "unparseable_value"].sum())),
+                fmt(int(d.loc[mask, "invalid_numeric"].sum())),
+            )
+            for label, mask in geography
+        ],
+        [38, 8, 8, 12, 10]
+    )
+
+    if n("missing_marker"):
+        frequency = (
+            d.loc[d["missing_marker"], "value_raw"]
+            .astype("string")
+            .value_counts()
+            .head(4)
         )
 
-    lines.extend([
-        f"Usable 2015-2019 county-year unemployment rates: {len(counties)*5 - len(pre_gaps):,} / {len(counties)*5:,} "
-        f"({100 * (1 - len(pre_gaps)/(len(counties)*5)):.2f}%)",
-        f"Missing/unusable pre-2020 county-year rates: {len(pre_gaps):,}",
-        f"Counties with all five usable pre-2020 rates: {complete_rate_counties:,}",
-        f"Counties with fewer than five usable rates: {pre_gaps['fips'].nunique():,}",
-        "  'Unusable' here means missing, duplicate, malformed, or outside allowed range.",
-        "  Arithmetic warnings below are reviewed separately (not auto-excluded).",
-        "",
-        "3. TIMELINESS: TIME WINDOW AND RESEARCH FITNESS",
-        f"Invalid/out-of-range year observations: {count('invalid_year'):,}",
-        f"Non-annual (not M13) observations: {count('not_annual'):,}",
-        f"Last observed in-range annual year: {int(annual_coverage['year'].max()) if not annual_coverage.empty else 'none'}",
-        "Distinct counties with an annual observation, by year:",
-    ])
+        detected = ", ".join(
+            f"{str(token)!r} ({fmt(int(total))})"
+            for token, total in frequency.items()
+        )
+
+        info(
+            f"Detected missing-value markers: {detected}. "
+            "These indicate unavailable numeric values, "
+            "not valid zeros."
+        )
+
+    if unavailable_total:
+        sub("Examples of unavailable raw values")
+
+        samples = d.loc[
+            d["empty_value"]
+            | d["missing_marker"]
+            | d["unparseable_value"],
+            ["fips", "year_raw", "measure", "value_raw"]
+        ].head(6)
+
+        table(
+            ["County FIPS", "Year", "Measure", "Raw value"],
+            [
+                (
+                    str(row.fips),
+                    str(row.year_raw),
+                    str(row.measure),
+                    repr(row.value_raw),
+                )
+                for row in samples.itertuples(index=False)
+            ],
+            [18, 10, 12, 18]
+        )
+
+        sub("Unavailable numeric values by measure | raw BLS")
+
+        table(
+            ["Measure", "Blank", "Marker", "Other text"],
+            [
+                (
+                    f"{code}  {label}",
+                    fmt(int(d.loc[d["measure"].eq(code), "empty_value"].sum())),
+                    fmt(int(d.loc[d["measure"].eq(code), "missing_marker"].sum())),
+                    fmt(int(d.loc[d["measure"].eq(code), "unparseable_value"].sum())),
+                )
+                for code, label in MEASURES.items()
+            ],
+            [44, 9, 9, 12]
+        )
+
+        missing_years = d.loc[
+            d["empty_value"]
+            | d["missing_marker"]
+            | d["unparseable_value"],
+            "year"
+        ].value_counts().sort_index()
+
+        years_text = ", ".join(
+            f"{int(year)} ({fmt(int(total))})"
+            for year, total in missing_years.items()
+        )
+
+        info(
+            "Years with unavailable numeric values: "
+            + (years_text or "none")
+            + "."
+        )
+
+    info(
+        "Numeric screening: unemployment rate must be 0-100; "
+        "headcounts must be nonnegative integers; a zero labor-force "
+        "denominator is flagged. Passing these checks does not "
+        "independently verify BLS estimates."
+    )
+
+    # ========================================================
+    # 04. COMPLETENESS
+    # ========================================================
+
+    section(4, "Completeness | BLS data before integration")
+
+    sub("BLS footprint | counties observed in at least one year")
+
+    metric("BLS counties outside Puerto Rico", fmt(len(bls)))
+
+    metric(
+        "Expected county-year-measure keys (BLS footprint)",
+        fmt(len(result["expected_bls"]))
+    )
+
+    metric(
+        "Absent county-year-measure keys",
+        fmt(len(missing_bls))
+    )
+
+    metric(
+        "Present key coverage",
+        pct(
+            len(result["expected_bls"]) - len(missing_bls),
+            len(result["expected_bls"])
+        )
+    )
+
+    info(
+        "This BLS-only baseline assumes all counties seen in at "
+        "least one BLS year should have all 10 years and four measures. "
+        "Historic boundary changes can produce apparent gaps that "
+        "are not acquisition errors. An absent key means no "
+        "structurally valid annual record exists; a missing marker "
+        "is counted separately."
+    )
+
+    sub("Coverage of primary research predictor | 2015-2019")
+
+    metric(
+        "Expected county-year unemployment rates",
+        fmt(len(pre_bls))
+    )
+
+    metric(
+        "Usable annual unemployment rates",
+        fmt(len(pre_bls) - len(gaps_bls))
+    )
+
+    metric(
+        "Missing / unusable annual rates",
+        fmt(len(gaps_bls))
+    )
+
+    metric(
+        "Counties with all 5 usable annual rates",
+        fmt(len(bls) - gaps_bls["fips"].nunique())
+    )
+
+    metric(
+        "Counties with at least one unusable annual rate",
+        fmt(gaps_bls["fips"].nunique())
+    )
+
+    info(
+        "'Usable' requires a valid annual key, one unambiguous "
+        "record, a numeric rate between 0 and 100, and an in-scope "
+        "year. Arithmetic warnings are evaluated separately."
+    )
+
+    sub("Observed annual coverage | within the BLS footprint")
+
+    yearly_rows = []
 
     for year in YEARS:
-        n = annual_coverage.loc[
-            annual_coverage["year"].eq(year), "fips"
-        ].nunique()
-        lines.append(f"  {year}: {n:,}")
-
-    lines.extend([
-        "  The 2015-2019 data align with the pre-2020 research predictor.",
-        "  The 2020-2024 data are retained for secondary comparisons.",
-        "  Reference ACS 2024 5-year estimates pool 2020-2024; they are NOT annual rows.",
-        "  A verified BLS release/vintage date is not established by the year field.",
-        "",
-        "4. CONSISTENCY: KEYS, GEOGRAPHY AND ARITHMETIC",
-        f"Duplicate annual county-year-measure observations: {count('duplicate_key'):,}",
-        f"Puerto Rico observations outside study scope: {count('puerto_rico'):,}",
-        f"BLS observations whose FIPS is not in ACS reference (excluding PR/invalid): {count('not_in_acs'):,}",
-        f"Distinct unmatched BLS FIPS: {len(unmatched):,}",
-        f"  Examples of unmatched BLS FIPS: {', '.join(unmatched[:10]) or 'none'}",
-        f"County-years eligible for 4-measure arithmetic checks: {len(arithmetic):,}",
-        f"Labor force != employed + unemployed beyond {LABOR_FORCE_TOL} people: {int(arithmetic['labor_force_warning'].sum()):,}",
-        f"Unemployment rate disagrees with 100*unemployed/labor_force beyond rounding tolerance: {int(arithmetic['rate_warning'].sum()):,}",
-        f"  Rate tolerance = {RATE_TOL_PP} percentage points + 100/labor_force.",
-        "  BLS rounding and independently averaged annual estimates may explain small differences.",
-        "",
-        "GEOGRAPHIC REVIEW AREAS (COUNTS ARE NOT AUTOMATIC ERRORS)",
-    ])
-
-    # Geography-related issues discussed in the project plan.
-    for state, label in [
-        ("02", "Alaska"),
-        ("09", "Connecticut"),
-        ("15", "Hawaii"),
-        ("51", "Virginia"),
-    ]:
-        gap_rows = missing.loc[
-            missing["fips"].str.startswith(state)
+        observed_year = observed.loc[
+            observed["year"].eq(year)
         ]
 
-        extra = [
-            f for f in unmatched if f.startswith(state)
+        rate_year = usable.loc[
+            usable["year"].eq(year)
+            & usable["measure"].eq("03")
         ]
 
-        lines.append(
-            f"  {label}: {gap_rows['fips'].nunique()} ACS counties with missing keys; "
-            f"{len(gap_rows)} absent keys; {len(extra)} unmatched BLS FIPS"
+        absent = int(missing_bls["year"].eq(year).sum())
+
+        yearly_rows.append((
+            str(year),
+            fmt(observed_year["fips"].nunique()),
+            fmt(rate_year["fips"].nunique()),
+            fmt(absent),
+        ))
+
+    table(
+        [
+            "Year",
+            "Counties w/ record",
+            "Usable rate counties",
+            "Absent measure keys",
+        ],
+        yearly_rows,
+        [8, 20, 22, 19]
+    )
+
+    # ========================================================
+    # 05. TIMELINESS
+    # ========================================================
+
+    section(5, "Timeliness | temporal suitability")
+
+    metric(
+        "Observations with invalid/out-of-scope year",
+        fmt(n("invalid_year"))
+    )
+
+    metric(
+        "Observations with period other than M13",
+        fmt(n("not_annual"))
+    )
+
+    observed_years = sorted(
+        d.loc[
+            ~d["invalid_year"],
+            "year"
+        ].dropna().unique()
+    )
+
+    if observed_years:
+        year_label = (
+            f"{int(min(observed_years))}-"
+            f"{int(max(observed_years))} "
+            f"({len(observed_years)} years)"
         )
+    else:
+        year_label = "none"
+
+    metric("In-range years observed", year_label)
+
+    info(
+        "M13 denotes BLS annual-average observations. The "
+        "2015-2019 window matches the planned pre-2020 "
+        "unemployment-rate predictor. The raw observation year "
+        "alone does not establish the release date or revision vintage."
+    )
+
+    # ========================================================
+    # 06. CONSISTENCY
+    # ========================================================
+
+    section(6, "Consistency | keys and internal relationships")
+
+    metric(
+        "Duplicated county-year-measure rows (all occurrences)",
+        fmt(n("duplicate_key"))
+    )
+
+    metric(
+        "Eligible county-years for labor-force identity check",
+        fmt(len(counts))
+    )
+
+    metric(
+        f"Labor force identity warnings (> {LF_TOL:g} persons)",
+        fmt(int(counts["warning"].sum()))
+    )
+
+    metric(
+        "Eligible county-years for unemployment-rate check",
+        fmt(len(rates))
+    )
+
+    metric(
+        "Unemployment-rate arithmetic warnings",
+        fmt(int(rates["warning"].sum()))
+    )
+
+    info(
+        "Check A: labor force approximately equals employed "
+        "+ unemployed. Check B: rate approximately equals "
+        "100 x unemployed / labor force. Tolerances are "
+        "diagnostic screening choices, not official BLS thresholds."
+    )
+
+    info(
+        f"Screening rules: absolute labor-force difference "
+        f"<= {LF_TOL:g} persons; absolute rate difference "
+        f"<= {RATE_TOL:g} + 100/labor_force percentage points. "
+        "Rounding of annual averages can produce small discrepancies."
+    )
+
+    if counts["warning"].any() or rates["warning"].any():
+        sub("Sample arithmetic warnings")
+
+        flagged_counts = counts.loc[
+            counts["warning"],
+            ["difference"]
+        ].rename(columns={"difference": "lf_gap"})
+
+        flagged_rates = rates.loc[
+            rates["warning"],
+            ["difference"]
+        ].rename(columns={"difference": "rate_gap_pp"})
+
+        flagged = flagged_counts.join(
+            flagged_rates,
+            how="outer"
+        )
+
+        for (fips, year), row in flagged.head(6).iterrows():
+            lines.append(
+                f"  {fips} / {int(year)}: "
+                f"labor-force gap={row.get('lf_gap', float('nan')):g}, "
+                f"rate gap={row.get('rate_gap_pp', float('nan')):g} pp"
+            )
+
+    # ========================================================
+    # 07. INTEGRATION READINESS
+    # ========================================================
+
+    section(7, "Integration readiness | ACS geographic reference only")
+
+    metric("ACS county FIPS outside Puerto Rico", fmt(len(acs)))
+    metric("BLS county FIPS outside Puerto Rico", fmt(len(bls)))
+    metric("Common BLS / ACS county FIPS", fmt(len(acs & bls)))
+    metric("Only in ACS reference", fmt(len(acs - bls)))
+    metric("Only in BLS source", fmt(len(bls - acs)))
+
+    metric(
+        "Expected ACS-referenced county-year-measure keys",
+        fmt(len(result["expected_acs"]))
+    )
+
+    metric(
+        "Absent keys relative to ACS geography",
+        fmt(len(missing_acs))
+    )
+
+    metric(
+        "Usable pre-2020 rates on ACS geographic reference",
+        f"{fmt(len(pre_acs) - len(gaps_acs))} / {fmt(len(pre_acs))} "
+        f"({pct(len(pre_acs) - len(gaps_acs), len(pre_acs))})"
+    )
+
+    metric(
+        "Invalid ACS FIPS / duplicated ACS FIPS",
+        f"{fmt(acs_info['invalid'])} / {fmt(acs_info['duplicates'])}"
+    )
+
+    info(
+        "This section compares geographic identifiers only. "
+        "No BLS-ACS data join is performed. Matching FIPS codes "
+        "do not guarantee matching historical boundaries."
+    )
+
+    if acs - bls:
+        listed = ", ".join(sorted(acs - bls)[:20])
+
+        info(
+            "ACS-only FIPS: " + listed
+            + (" ..." if len(acs - bls) > 20 else "")
+            + "."
+        )
+
+    if bls - acs:
+        listed = ", ".join(sorted(bls - acs)[:20])
+
+        info(
+            "BLS-only FIPS: " + listed
+            + (" ..." if len(bls - acs) > 20 else "")
+            + "."
+        )
+
+    sub("Counties with missing ACS-referenced year-measure keys")
+
+    geographic_gaps = (
+        missing_acs
+        .groupby("fips", as_index=False)
+        .agg(
+            absent_keys=("measure", "size"),
+            years_affected=("year", "nunique")
+        )
+        .sort_values(
+            ["absent_keys", "fips"],
+            ascending=[False, True]
+        )
+    )
+
+    if geographic_gaps.empty:
+        info("None identified.")
+    else:
+        table(
+            ["County FIPS", "Missing keys", "Years affected"],
+            [
+                (
+                    row.fips,
+                    fmt(int(row.absent_keys)),
+                    fmt(int(row.years_affected)),
+                )
+                for row in geographic_gaps.head(12).itertuples(index=False)
+            ],
+            [20, 17, 19]
+        )
+
+        if len(geographic_gaps) > 12:
+            info(
+                f"Showing 12 of {len(geographic_gaps):,} "
+                "counties with absent keys."
+            )
+
+    info(
+        "Historical Alaska county-equivalent changes and "
+        "Hawaii's Kalawao County should be reviewed as potential "
+        "coverage or geographic-definition differences, not "
+        "automatically treated as acquisition errors."
+    )
+
+    # ========================================================
+    # 08. CONCLUSIONS AND CLEANING IMPLICATIONS
+    # ========================================================
+
+    section(8, "Conclusions and cleaning implications")
+
+    if unavailable_total:
+        info(
+            "[REVIEW] Document the origin, measure, and year of "
+            "blank or nonnumeric values. If they occur only outside "
+            "the study scope, distinguish this from missingness "
+            "in the US analysis population."
+        )
+    else:
+        info(
+            "[OBSERVED] No blank or nonnumeric value markers "
+            "were detected."
+        )
+
+    if len(gaps_bls):
+        info(
+            "[REVIEW] Resolve incomplete 2015-2019 unemployment-rate "
+            "coverage before calculating county means. Do not "
+            "silently treat missing years as zero or assume "
+            "historical county equivalence."
+        )
+    else:
+        info(
+            "[OBSERVED] Every BLS-observed county has five "
+            "usable pre-2020 unemployment-rate observations."
+        )
+
+    if len(acs ^ bls) or len(missing_acs):
+        info(
+            "[REVIEW] Document ACS/BLS geographic differences "
+            "and any validated crosswalk before integration. "
+            "Do not assume that historical FIPS codes are equivalent."
+        )
+
+    any_numeric_issues = (
+        n("duplicate_key")
+        or n("invalid_numeric")
+        or counts["warning"].any()
+        or rates["warning"].any()
+    )
+
+    if any_numeric_issues:
+        info(
+            "[REVIEW] Investigate duplicate keys, invalid numbers "
+            "or arithmetic warnings before deciding on cleaning rules."
+        )
+    else:
+        info(
+            "[OBSERVED] No duplicate key, invalid-number or "
+            "arithmetic warning was detected at the selected "
+            "screening thresholds."
+        )
+
+    info(
+        "NEXT STAGE: The separate BLS cleaning script should "
+        "record decisions and produce processed data. The "
+        "post-integration assessment must then evaluate the "
+        "genuinely joined dataset."
+    )
+
+    # ========================================================
+    # 09. DEFINITIONS AND REPRODUCIBILITY
+    # ========================================================
+
+    section(9, "Definitions and reproducibility")
+
+    info(
+        "BLS footprint: unique valid-format county FIPS present "
+        "in the BLS source during at least one year, excluding "
+        "Puerto Rico. This is not an official count of counties "
+        "in any single year."
+    )
+
+    info(
+        "Absent key: a county-year-measure combination without "
+        "a structurally valid M13 record. Unusable rate: an absent "
+        "key or one with missing, invalid or duplicate numeric data."
+    )
+
+    info(
+        "Value classes are mutually exclusive: blank/null, "
+        "recognized missing marker, other nonnumeric text, "
+        "or numeric. Flags in other categories may overlap. "
+        "Arithmetic tolerances do not prove source accuracy."
+    )
+
+    info(
+        "Raw data were read only. ACS contributed a FIPS "
+        "reference list, not a joined table. No original "
+        "observations were removed, filled or rewritten."
+    )
+
+    blank()
 
     lines.extend([
-        "  A 2024 ACS FIPS may not have existed throughout 2015-2024.",
-        "  Investigate historic county-equivalent changes before exclusion or mapping.",
+        f"  BLS input: data/raw/{BLS_PATH.name}",
+        f"  BLS SHA-256: {sha256(BLS_PATH)}",
+        f"  ACS reference: data/raw/{ACS_PATH.name}",
+        f"  ACS SHA-256: {sha256(ACS_PATH)}",
+        "  Script: scripts/bls_quality_assessment.py",
+        "  Output: quality_assessment/bls_quality_report.txt",
         "",
-        "SAMPLE RECORDS TO INVESTIGATE (fips, year, measure, raw value)",
-    ])
-
-    for flag in [
-        "invalid_series_id",
-        "not_annual",
-        "duplicate_key",
-        "missing_value",
-        "non_numeric_value",
-        "invalid_value",
-        "not_in_acs",
-    ]:
-        lines.append(
-            f"  {flag}: {examples(assessed, flag)}"
-        )
-
-    if not arithmetic.empty:
-        warnings = arithmetic.loc[
-            arithmetic["labor_force_warning"]
-            | arithmetic["rate_warning"]
-        ].head(SAMPLE_SIZE)
-
-        arithmetic_samples = "; ".join(
-            f"({fips}, {int(year)}, LF gap={row.labor_force_difference:.1f}, "
-            f"rate gap={row.rate_difference_pp:.3f} pp)"
-            for (fips, year), row in warnings.iterrows()
-        )
-
-        lines.append(
-            f"  arithmetic warnings: {arithmetic_samples or 'none'}"
-        )
-
-    lines.extend([
-        "",
-        "INTERPRETATION AND NEXT STEPS",
-        "  Raw BLS and ACS inputs were read without modification.",
-        "  ACS matching is only a pre-integration feasibility check, not a join.",
-        "  Coordinate FIPS harmonization with ACS and BEA cleaning before integration.",
-        "  Investigate invalid/duplicate values and arithmetic warnings; do not auto-impute.",
-        "  In the separate cleaning stage, document every rule and rerun assessment.",
-        "  This report does not validate the geographic definition behind a matching FIPS.",
+        "=" * REPORT_WIDTH,
+        "END OF REPORT".center(REPORT_WIDTH),
+        "=" * REPORT_WIDTH,
     ])
 
     return "\n".join(lines) + "\n"
 
 
+# ============================================================
+# 4. EXECUTION
+# ============================================================
 
 def main():
-    # Read raw data and geographic reference.
-    df = load_bls()
-    counties, acs_info = load_acs_counties()
+    # Load inputs without modifying raw files.
+    df, statuses = read_bls()
+    acs_counties, acs_info = read_acs_fips()
 
-    # Perform pre-integration quality checks.
-    assessed, missing, pre_gaps, arithmetic, flags = assess(
-        df, counties
-    )
+    # Assess quality before cleaning or integration.
+    result = assess(df, acs_counties)
 
-    # Generate assessment report.
-    report = make_report(
-        df,
-        counties,
-        acs_info,
-        assessed,
-        missing,
-        pre_gaps,
-        arithmetic,
-        flags
-    )
+    # Generate and overwrite the existing report.
+    report = build_report(result, statuses, acs_info)
 
-    # Create output folder if necessary.
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 
-    # Overwrite the existing quality assessment report.
-    output = RESULTS_DIR / "bls_quality_report.txt"
-
-    output.write_text(
+    OUTPUT.write_text(
         report,
         encoding="utf-8"
     )
 
-    # Print report.
     print(report)
-    print(f"Saved: {output.relative_to(ROOT)}")
+    print(f"Saved: {OUTPUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
