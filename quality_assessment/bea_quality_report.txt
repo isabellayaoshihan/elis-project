@@ -1,0 +1,83 @@
+BEA CAGDP1 PRE-INTEGRATION QUALITY ASSESSMENT
+
+Source: bea_cagdp1_county.csv
+SHA-256 matches recorded checksum: True
+Total rows: 62,540  |  geographies: 3,127  |  lines: ['1', '3']  |  years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+Units: {'1': 'Thousands of chained 2017 dollars', '3': 'Thousands of dollars'}  |  UNIT_MULT: ['3']
+
+1. ACCURACY
+Non-numeric DataValue cells: 0
+Negative values: 0
+FIPS not 5 digits: 0
+Unknown state FIPS prefixes: []; Puerto Rico (72) rows: 0
+Duplicate (GeoFips, line, year) keys: 0
+Zero DataValue cells: 268  (all carry '(NA)' note: True; NA-noted cells that are zero: True)
+Real GDP year-over-year changes beyond +/-50%: 77 county-years in 66 counties
+  48447 Throckmorton, TX 2023: +119%
+  30051 Liberty, MT 2018: +114%
+  51025 Brunswick, VA 2016: +112%
+  48109 Culberson, TX 2017: +111%
+  48173 Glasscock, TX 2023: +91%
+  48033 Borden, TX 2023: +87%
+  48317 Martin, TX 2023: +86%
+  48389 Reeves, TX 2019: +84%
+Current/real GDP ratio (implied price index vs 2017), median 1.05, 5th-95th pct 0.97-1.33
+Arithmetic checks against an external source were not performed.
+
+2. COMPLETENESS
+Cells marked '(NA)' (value 0 in file): 268 of 62,540 (0.43%)
+Real and current GDP NA in the same geography-years: True
+NA real-GDP geography-years by year: {2015: 14, 2016: 14, 2017: 14, 2018: 14, 2019: 14, 2020: 13, 2021: 13, 2022: 13, 2023: 13, 2024: 12}
+Geographies with any NA: 23
+  02063 Chugach Census Area, AK*: NA 2015-2019 (5 yrs)
+  02066 Copper River Census Area, AK*: NA 2015-2019 (5 yrs)
+  02201 Prince of Wales-Outer Ketchikan Census Area, AK*: NA 2015-2024 (10 yrs)
+  02232 Skagway-Hoonah-Angoon Census Area, AK*: NA 2015-2024 (10 yrs)
+  02261 Valdez-Cordova Census Area, AK*: NA 2020-2024 (5 yrs)
+  02280 Wrangell-Petersburg Census Area, AK*: NA 2015-2024 (10 yrs)
+  09001 Fairfield, CT*: NA 2024 (1 yrs)
+  09003 Hartford, CT*: NA 2024 (1 yrs)
+  09005 Litchfield, CT*: NA 2024 (1 yrs)
+  09007 Middlesex, CT*: NA 2024 (1 yrs)
+  09009 New Haven, CT*: NA 2024 (1 yrs)
+  09011 New London, CT*: NA 2024 (1 yrs)
+  09013 Tolland, CT*: NA 2024 (1 yrs)
+  09015 Windham, CT*: NA 2024 (1 yrs)
+  09110 Capitol, CT*: NA 2015-2023 (9 yrs)
+  09120 Greater Bridgeport, CT*: NA 2015-2023 (9 yrs)
+  09130 Lower Connecticut River Valley, CT*: NA 2015-2023 (9 yrs)
+  09140 Naugatuck Valley, CT*: NA 2015-2023 (9 yrs)
+  09150 Northeastern Connecticut, CT*: NA 2015-2023 (9 yrs)
+  09160 Northwest Hills, CT*: NA 2015-2023 (9 yrs)
+  09170 South Central Connecticut, CT*: NA 2015-2023 (9 yrs)
+  09180 Southeastern Connecticut, CT*: NA 2015-2023 (9 yrs)
+  09190 Western Connecticut, CT*: NA 2015-2023 (9 yrs)
+Geographies without real GDP in 2015 or 2019 (no pre-2020 growth): 14
+Geographies with no real GDP in any year: 3
+
+3. TIMELINESS
+Years covered: 2015-2024; every geography has all 10 years: True
+Latest year (2024) NA: 12 geographies (8 old Connecticut counties plus 4 legacy Alaska areas)
+Reference period for real GDP is chained 2017 dollars; BEA may revise recent years, so 2024 is least stable.
+Pre-2020 window (2015-2019) is fully covered except the geographies listed above.
+
+4. CONSISTENCY
+Geographies: BEA 3,127 | ACS (excl. PR) 3,144 | BLS clean 3,144
+BEA FIPS matching ACS directly: 3,091; BLS directly: 3,091
+ACS counties not in BEA by FIPS: 53  (by state: {'51': 51, '15': 2})
+BEA geographies not in ACS: 36  (by state: {'51': 23, '09': 8, '02': 4, '15': 1})
+Combined multi-county units (names contain '+'): 24 (VA 23, HI 1)
+Footnoted ('*') geographies: 62
+Connecticut carries both vintages: 8 old counties and 9 planning regions (summing CT would double count)
+Alaska legacy areas absent from ACS: ['02201', '02232', '02261', '02280']
+Members of combined units are absent as separate BEA rows: True
+Units consistent across all rows within each line: True
+GeoName format mixes 'County, ST', '(Independent City)', and 'A + B, ST'; it must not be used as a join key.
+
+SUMMARY OF ISSUES FOR CLEANING
+1. 268 zero-coded NA cells -> recode to NA (bea_clean.py).
+2. 24 combined units cover 53 ACS/BLS counties -> crosswalk (bea_fips_crosswalk.csv).
+3. 14 geographies lack 2015 or 2019 real GDP -> no pre-2020 growth; decision needed (CT, AK).
+4. 8 old CT counties and 4 legacy AK areas have no ACS/BLS match -> exclude from joins.
+
+No raw data were modified.

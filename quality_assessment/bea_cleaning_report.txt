@@ -1,0 +1,21 @@
+BEA CAGDP1 cleaning and validation
+Raw checksum validation: PASS
+Raw rows: 62,540 (2 lines x 3,127 geographies x 10 years)
+Zero values recoded to NA ('(NA)' note): 268 (134 geography-years per line)
+Cleaned rows (one per geography-year): 31,270
+Real GDP missing geography-years: 134
+
+Crosswalk: 3,091 direct, 24 combined units covering 53 ACS counties, 12 BEA units with no ACS match
+ACS/BLS counties (excl. PR) covered by crosswalk: 3,144 of 3,144
+ACS/BLS counties not covered: []
+
+Units without real GDP in 2015 or 2019 (no pre-2020 growth), by state FIPS: {'09': 9, '02': 5}
+  ...of which map to an ACS county: 11 counties (Capitol, CT, Chugach Census Area, AK, Copper River Census Area, AK, Greater Bridgeport, CT, Lower Connecticut River Valley, CT, Naugatuck Valley, CT, Northeastern Connecticut, CT, Northwest Hills, CT, South Central Connecticut, CT, Southeastern Connecticut, CT, Western Connecticut, CT)
+
+Notes
+Values are thousands of dollars (UNIT_MULT = 3); real = chained 2017 dollars.
+Combined units (VA cities + HI Maui/Kalawao) report one GDP for several ACS/BLS counties.
+Level GDP must not be copied to members; a growth rate can be, but this is a group decision.
+Connecticut planning regions only have real GDP for 2024; old CT counties stop at 2023.
+Read with dtype={'bea_fips': str, 'county_fips': str} to keep leading zeros.
+No imputation or outlier removal was applied.
