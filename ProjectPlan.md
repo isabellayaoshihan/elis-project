@@ -9,8 +9,6 @@ For each dataset, we download the data with a script, verify it with a SHA-256 c
 
 ## Team
 | Member | Role | Planned responsibilities |
-|---|---|---|
-| Member | GitHub | Role | Responsibilities |
 |---|---|---|---|
 | Isabella Yao | @isabellayaoshihan | Data Acquisition Lead | ACS and BLS acquisition scripts with SHA-256 checksums; repository folder structure; BLS quality assessment and cleaning |
 | Eric Shi | @HongyouEric | Data Integration Lead | ACS quality assessment and cleaning; county geography review; joining the three cleaned datasets; licenses and references |
@@ -116,6 +114,35 @@ Users reproducing the project can obtain their own API credentials from the foll
 - BEA API key registration: https://apps.bea.gov/api/signup/
 
 Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and preserved before subsequent cleaning and integration steps.
+
+## Consistency Across Counties and Jurisdictions
+
+Because we cover every county in the country, the three agencies do not always describe the same place in the same way, and their figures are not equally reliable everywhere. We check two kinds of consistency: whether a FIPS code refers to the same area in all three sources, and whether a measure is equally trustworthy in large and small counties.
+
+### Geographic consistency
+
+Puerto Rico is removed during cleaning because it is outside our scope. Of the remaining 3,144 counties, 3,091 match directly across all three sources. We reviewed every county that did not match directly or that BEA footnotes as having a boundary change. Each decision, its reason, and an official source link are recorded in `data/integrated/county_geography_review.csv`.
+
+| Jurisdiction | What differs | Decision | Counties excluded |
+|---|---|---|---|
+| Virginia | BEA reports 23 combined units that merge independent cities with neighboring counties | Exclude the member counties | 51 |
+| Connecticut | ACS and BLS use 9 planning regions; BEA reports planning regions only from 2024, so 2015 and 2019 GDP are missing | Exclude | 9 |
+| Hawaii | BEA combines Maui and Kalawao into one unit, and BLS has no data for Kalawao | Exclude both | 2 |
+| Alaska | Chugach and Copper River were split from Valdez-Cordova in 2019 and have no 2015 to 2019 data | Exclude | 2 |
+| Alaska, Colorado, South Dakota, Virginia | Boundary or code changes made before 2015, such as the creation of Broomfield, Colorado in 2001 | Keep | 0 of 15 reviewed |
+
+This leaves 3,080 counties. We exclude these counties rather than merge data because adding ACS and BLS figures up to BEA's combined units would change the unit of analysis for part of the sample, and copying one combined growth rate to several counties would give different places the same value. Since the exclusions are concentrated in Virginia and Connecticut, we will compare the population and in-migration rates of excluded and retained counties and report any difference as a limitation.
+
+### Measurement consistency
+
+| Issue | Source and scale | How we handle it |
+|---|---|---|
+| Sampling error is larger in small counties: the coefficient of variation (MOE ÷ 1.645 ÷ estimate) of the interstate in-migrant count is above 40% in 784 of 3,144 counties, and 37 counties report zero | ACS | Keep all counties in the main analysis and weight them by population, so that small, noisy estimates count less; rerun RQ1 without the 784 low-reliability counties as a robustness check |
+| Some margins of error are controlled and published as a code (-555555555) | ACS, 3,308 cells | Store as blank, never as zero |
+| County unemployment is estimated indirectly from state models and administrative data, so small counties vary more from year to year | LAUS | Use the five-year mean for 2015 to 2019 instead of a single year |
+| Suppressed GDP values appear as zero in the raw file | BEA, 268 cells (0.43%) | Recode as missing |
+| Very large year-to-year GDP changes | BEA, 77 county-years beyond ±50%, mostly small Texas energy counties | Keep as published; check whether they drive the RQ1 results |
+| Different time windows across sources | All three | Measure predictors in 2015 to 2019 so they come before the 2020 to 2024 outcome |
 
 ## Data Lifecycle
 We follow the DataONE lifecycle. The **Plan** stage defines our research questions, data sources, and methods. During **Collect**, we acquire the three datasets through government APIs and verify file integrity using SHA-256 checksums. During **Assure**, we assess data quality and clean each dataset while preserving the raw files. During **Integrate**, we combine the cleaned data using harmonized county identifiers and assess the resulting dataset for missing values, duplicate records, and geographic mismatches. During **Analyze**, we examine the relationships described in RQ1–RQ3. **Describe** includes the data dictionary, metadata, and documentation, while **Preserve** includes checksums, version control, and project releases. If integration reveals additional data quality problems, we will return to the relevant cleaning steps and rerun the workflow.
