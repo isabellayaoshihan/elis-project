@@ -1,20 +1,21 @@
 # Project Plan
 
 ## Overview
-This project asks whether local economic conditions shaped where Americans moved. Specifically, we test whether county labor-market conditions from 2015 through 2019 (unemployment and GDP growth) predict interstate in-migration from 2020 through 2024, and whether in-migrants differ from existing residents in education and age.
+This project asks whether counties with stronger economies before the pandemic attracted more people from other states afterward. Our main question is whether a county's unemployment rate and GDP growth from 2015 to 2019 predict the share of its 2020 to 2024 residents who had moved in from another state within the past year. We also compare the age and education of these newcomers with residents who did not move.
 
-We will integrate three public U.S. government datasets at the county level: ACS for migration, demographics, and remote work; Bureau of Labor Statistics (BLS) Local Area Unemployment Statistics (LAUS) for employment and unemployment; and Bureau of Economic Analysis (BEA) County GDP (CAGDP1) for economic output. The sources link through five-digit county FIPS codes, although some geographic definitions differ and require additional handling before integration.
+We use three public datasets from federal agencies. The Census Bureau's American Community Survey (ACS) gives migration, age, education, and remote work for each county. The Bureau of Labor Statistics' Local Area Unemployment Statistics (LAUS) give annual unemployment rates. The Bureau of Economic Analysis' county GDP table (CAGDP1) gives annual real GDP. All three identify counties by a five-digit FIPS code, which we use as the join key.
 
-Our approach follows the data curation lifecycle. We will acquire each dataset programmatically with SHA-256 integrity checks and assess its quality for accuracy, completeness, timeliness, and consistency. Each dataset will be cleaned separately, while the original files remain unchanged. We will then resolve differences in geographic coverage, combine the cleaned datasets at the county level, and assess the quality of the integrated data. Finally, we will conduct the analysis and document the results. The process will be supported by a reproducible workflow using Snakemake or a run-all script.
-
+For each dataset, we download the data with a script, verify it with a SHA-256 checksum, assess its accuracy, completeness, timeliness, and consistency, and clean the problems we find without changing the raw file. We then review counties whose boundaries or codes differ across the three agencies, join the cleaned tables into one row per county, and assess the joined table again before analysis. A single workflow file will run all of these steps in order so that anyone can reproduce our results.
 
 ## Team
 | Member | Role | Planned responsibilities |
 |---|---|---|
-| Isabella Yao | Data Acquisition Lead | Acquisition scripts for ACS and BLS with SHA-256 checks; storage and folder organization; source documentation; BLS quality assessment and cleaning | 
-| Lyric Li | Integration and Workflow Lead | FIPS-based integration and integration schema; Snakemake or run_all workflow; reproducibility testing; release management |
-| Eric Shi | Data Quality and Compliance Lead | ACS quality assessment and cleaning; support for post-integration quality assessment; license and terms of use review |
-| Susu Tran | Analysis and Documentation Lead | BEA acquisition, quality assessment, and cleaning; research questions; analysis and visualization; data dictionary and metadata file; final README coordination |
+| Member | GitHub | Role | Responsibilities |
+|---|---|---|---|
+| Isabella Yao | @isabellayaoshihan | Data Acquisition Lead | ACS and BLS acquisition scripts with SHA-256 checksums; repository folder structure; BLS quality assessment and cleaning |
+| Eric Shi | @HongyouEric | Data Integration Lead | ACS quality assessment and cleaning; county geography review; joining the three cleaned datasets; licenses and references |
+| Susu Tran | @susutran | Analysis and Documentation Lead | BEA acquisition, quality assessment, and cleaning; BEA to county crosswalk; analysis and visualization; data dictionary and metadata |
+| Lyric Li | @ZehuiLi123 | Workflow and Reproducibility Lead | Plan revision and status report;  workflow automation; dependency files; fresh-clone reproducibility test; releases |
 
 ## Research Question
 
@@ -120,33 +121,43 @@ Raw data retrieved by the acquisition scripts will be stored in `data/raw/` and 
 We follow the DataONE lifecycle. The **Plan** stage defines our research questions, data sources, and methods. During **Collect**, we acquire the three datasets through government APIs and verify file integrity using SHA-256 checksums. During **Assure**, we assess data quality and clean each dataset while preserving the raw files. During **Integrate**, we combine the cleaned data using harmonized county identifiers and assess the resulting dataset for missing values, duplicate records, and geographic mismatches. During **Analyze**, we examine the relationships described in RQ1–RQ3. **Describe** includes the data dictionary, metadata, and documentation, while **Preserve** includes checksums, version control, and project releases. If integration reveals additional data quality problems, we will return to the relevant cleaning steps and rerun the workflow.
 
 ## Storage and Organization
-Data are stored as flat tabular files, organized by curation stage: `data/raw/` (unmodified API output in CSV and JSON, each with a `.sha256` checksum), `data/processed/` (cleaned source tables), `data/integrated/` (joined analysis table), `quality_assessment/` (data quality reports), `results/` (outputs and figures), and `scripts/` (one script per stage). BLS and BEA use one row per county-year, and ACS uses one row per county. FIPS codes are stored as zero-padded strings so leading zeros are not lost.
+We store all data as flat files and organize the repository by curation stage:
+
+```
+data/raw/             unmodified API output, each file paired with a .sha256 checksum
+data/processed/       cleaned table for each source, plus the BEA to county crosswalk
+data/integrated/      joined county table and the county geography review log
+quality_assessment/   quality and cleaning reports for each source
+scripts/              one script per step
+results/              analysis outputs and figures
+```
+
+Scripts are named by source and step (`acquire_acs.py`, `acs_quality_assessment.py`, `acs_clean.py`), so every output can be traced to the script that produced it. The cleaned ACS table has one row per county; the cleaned LAUS and BEA tables have one row per county and year. FIPS codes are stored as five-character text so leading zeros are kept, and every script reads them as strings.
 
 ## Ethical Data Handling and Licensing
 All three sources are U.S. government works in the public domain, so the raw files can be redistributed in this repository. We will follow each API's terms of use. The data are county-level aggregates with no individual records, so privacy risk is low. API keys are kept out of the repository (see Data Acquisition). No Kaggle datasets are used.
 
 ## Timeline
-| # | Task | Description | Owner | Target date | Module |
-|---|---|---|---|---|---|
-## Timeline
+
+Status as of November 11, 2026.
 
 | # | Task | Description | Owner | Target date | Status | Module |
 |---|---|---|---|---|---|---|
 | 1 | Project plan | Write ProjectPlan.md and publish the project-plan release | All | Oct 12 | Completed | |
 | 2 | Lifecycle mapping | Relate the project to the DataONE data lifecycle model | Susu Tran | Oct 12 | Completed | M1 |
-| 3 | Data acquisition | One script per source with SHA-256 integrity checks; raw data committed to `data/raw/`.<br>**ACS and LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Isabella Yao, Susu Tran | Oct 11 | Completed | M4 |
+| 3 | Data acquisition | One script per source with SHA-256 checksums; raw data committed to `data/raw/`.<br>**ACS and LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Isabella Yao, Susu Tran | Oct 11 | Completed | M4 |
 | 4 | Storage and organization | Folder structure by curation stage, naming conventions, file formats | Isabella Yao, Susu Tran | Oct 12 | Completed | M2 |
 | 5 | Ethics and licensing review | Document license and terms of use for every source | Susu Tran | Oct 12 | Completed | M3 |
-| 6 | Pre-integration quality assessment | One assessment script per dataset covering accuracy, completeness, timeliness, and consistency, including missing values, duplicates, data types, and FIPS code validity; results documented in `quality_assessment/`.<br>**ACS 2024 5-Year (Census Bureau):** Eric Shi<br>**LAUS 2015 to 2024 (BLS):** Isabella Yao<br>**CAGDP1 2015 to 2024 (BEA):** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M10 |
-| 7 | Data cleaning | One cleaning script per dataset, separate from the assessment script. Cleaned data is exported to `data/processed/` and the raw data in `data/raw/` is left unchanged.<br>| Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M11, M12 |
-| 8 | Data integration | Join the cleaned ACS, LAUS, and BEA tables on 5-digit county FIPS, with LAUS and BEA aggregated to 2015 to 2019 predictors; log unmatched counties; document the integration schema. Started in a team working session on Nov 6. | All (led by Lyric Li) | Nov 14 | In progress | M7, M8 |
-| 9 | Post-integration quality assessment | Same four dimensions on the integrated dataset | Lyric Li | Nov 17 | Not started | M10 |
-| 10 | Plan revision | Revise ProjectPlan.md based on Milestone 2 feedback; make wording clearer and more consistent; update the timeline to reflect current progress | Lyric Li | Nov 6 | In progress | |
+| 6 | Pre-integration quality assessment | One assessment script per source covering accuracy, completeness, timeliness, and consistency; reports in `quality_assessment/`.<br>**ACS:** Eric Shi<br>**LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M10 |
+| 7 | Data cleaning | One cleaning script per source, separate from the assessment script; cleaned tables in `data/processed/`, raw files unchanged.<br>**ACS:** Eric Shi<br>**LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M11, M12 |
+| 8 | Data integration | Review counties whose geography differs across sources; summarize LAUS and BEA to 2015 to 2019 measures; join the three tables on county FIPS. First joined table and geography review completed Nov 8; integration script still to be committed. | Eric Shi | Nov 14 | In progress | M7, M8 |
+| 9 | Post-integration quality assessment | Assess the joined table for accuracy, completeness, timeliness, and consistency | Lyric Li | Nov 17 | Not started | M10 |
+| 10 | Plan revision | Revise ProjectPlan.md based on Milestone 2 feedback | Lyric Li | Nov 11 | In progress | |
 | 11 | Status report | StatusReport.md with each member's own contribution summary; publish the status-report release | All | Nov 19 | Not started | |
-| 12 | Workflow automation | Snakemake or run_all script chaining single-purpose scripts from acquisition to analysis | Lyric Li | Nov 26 | Not started | M13 |
-| 13 | Analysis and visualization | Answer the research questions with at least one visualization | Susu Tran | Nov 30 | Not started | |
-| 14 | Environment and dependencies | requirements.txt, pip freeze output, relative paths throughout | Lyric Li | Dec 1 | Not started | M14 |
-| 15 | Metadata and documentation | Data dictionary, DCAT or Schema.org metadata file | Susu Tran | Dec 3 | Not started | M15 |
+| 12 | Workflow automation | Snakemake or run-all script that calls each step's script in order, from acquisition to analysis | Lyric Li | Nov 26 | Not started | M13 |
+| 13 | Analysis and visualization | Answer RQ1 to RQ3 with at least one visualization | Susu Tran | Nov 30 | Not started | |
+| 14 | Environment and dependencies | `requirements.txt`, `pip freeze` output, relative paths throughout | Lyric Li | Dec 1 | Not started | M14 |
+| 15 | Metadata and documentation | Data dictionary and a DCAT or Schema.org metadata file | Susu Tran | Dec 3 | Not started | M15 |
 | 16 | Licenses and references | License for our code, data license notes, citations for all data and software | Eric Shi | Dec 3 | Not started | M3 |
 | 17 | Reproducibility test | Fresh clone, clean install, full workflow run | Lyric Li | Dec 5 | Not started | M14 |
 | 18 | Final report and release | Complete README.md and publish the final-project release | All | Dec 7 | Not started | |
