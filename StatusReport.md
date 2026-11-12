@@ -146,6 +146,5 @@ We rewrote the Overview, Team, Storage and Organization, and Timeline sections. 
 
 ### Susu Tran
 
-### Lyric Li： ### Lyric Li
-
+### Lyric Li：
 For this milestone, I revised the [project plan](ProjectPlan.md) in response to the Milestone 2 feedback. I added the Consistency Across Counties and Jurisdictions section, which explains why 64 counties are excluded across four states and introduces population weighting with a robustness check for the 784 counties whose ACS in-migration estimates have large sampling error. I rewrote the Overview, Team, Storage and Organization, and Timeline sections for clarity, and updated file paths and task statuses so the plan matches the current repository. I also compiled this status report, linking each completed task to its scripts, reports, and outputs and showing how each cleaning step responds to an issue found in the quality assessment. I am now leading the post-integration quality assessment (Task 9), due November 17.
