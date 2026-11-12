@@ -1,8 +1,8 @@
 # Status Report: County Economic Conditions and Interstate Migration
 
-**Team:** Isabella Yao, Eric Shi, Susu Tran, Lyric Li
-**Milestone:** 3 (Interim Status Report)
-**Status as of:** November 12, 2026
+- **Team:** Isabella Yao, Eric Shi, Susu Tran, Lyric Li
+- **Milestone:** 3 (Interim Status Report)
+- **Status as of:** November 12, 2026
 
 We have acquired, assessed, and cleaned all three datasets, and the first version of the integrated table is complete: 3,080 of 3,144 counties have complete records from all three sources. The post-integration quality assessment is in progress. Workflow automation, analysis, and documentation are scheduled for late November and early December.
 
@@ -74,9 +74,13 @@ This assessment covers what the integration checks do not: data vintages and tim
 
 We revised the [project plan](ProjectPlan.md) in response to Milestone 2 feedback. Section 3 describes the changes.
 
-### Tasks 11 to 18 (not started)
+### Task 11: Status report (in progress)
 
-The status report, workflow automation, analysis, dependency files, metadata, licenses, reproducibility testing, and final report are scheduled in Section 2.
+This report. Each member is adding their own contribution summary in Section 5.
+
+### Tasks 12 to 18 (not started)
+
+Workflow automation, analysis, dependency files, metadata, licenses, reproducibility testing, and the final report are scheduled in Section 2.
 
 ## 2. Updated Timeline
 
@@ -147,4 +151,4 @@ We rewrote the Overview, Team, Storage and Organization, and Timeline sections. 
 ### Susu Tran
 
 ### Lyric Li：
-For this milestone, I revised the [project plan](ProjectPlan.md) in response to the Milestone 2 feedback. I added the Consistency Across Counties and Jurisdictions section, which explains why 64 counties are excluded across four states and introduces population weighting with a robustness check for the 784 counties whose ACS in-migration estimates have large sampling error. I rewrote the Overview, Team, Storage and Organization, and Timeline sections for clarity, and updated file paths and task statuses so the plan matches the current repository. I also compiled this status report, linking each completed task to its scripts, reports, and outputs and showing how each cleaning step responds to an issue found in the quality assessment. I am now leading the post-integration quality assessment (Task 9), due November 17.
+I revised the [project plan](ProjectPlan.md) in response to the Milestone 2 feedback, adding the Consistency Across Counties and Jurisdictions section, which explains the exclusion of 64 counties, and rewriting the Overview, Team, Storage, and Timeline sections for clarity. I compiled this status report, linking each task to its artifacts and showing how each cleaning step addresses an issue found in the assessment. I am now leading the post-integration quality assessment (Task 9).
