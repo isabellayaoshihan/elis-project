@@ -121,7 +121,7 @@ Because we cover every county in the country, the three agencies do not always d
 
 ### Geographic consistency
 
-Puerto Rico is removed during cleaning because it is outside our scope. Of the remaining 3,144 counties, 3,091 match directly across all three sources. We reviewed every county that did not match directly or that BEA footnotes as having a boundary change. Each decision, its reason, and an official source link are recorded in `data/integrated/county_geography_review.csv`.
+Puerto Rico is removed during cleaning because it is outside our scope. Of the remaining 3,144 counties, 3,091 match directly across all three sources. We reviewed every county that did not match directly or that BEA footnotes as having a boundary change. Each decision, its reason, and an official source link are recorded in `quality_assessment/county_geography_review.csv`.
 
 | Jurisdiction | What differs | Decision | Counties excluded |
 |---|---|---|---|
@@ -153,8 +153,8 @@ We store all data as flat files and organize the repository by curation stage:
 ```
 data/raw/             unmodified API output, each file paired with a .sha256 checksum
 data/processed/       cleaned table for each source, plus the BEA to county crosswalk
-data/integrated/      joined county table and the county geography review log
-quality_assessment/   quality and cleaning reports for each source
+data/integrated/      all-county join audit, screened analysis table, and exclusion list
+quality_assessment/   quality, cleaning, and integration reports, plus the county geography review
 scripts/              one script per step
 results/              analysis outputs and figures
 ```
