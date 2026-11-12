@@ -1,0 +1,65 @@
+county_fips,NAME,bea_fips,match_type,bls_years_2015_2019,bea_footnoted,exclusion_reasons
+02063,"Chugach Census Area, Alaska",02063,direct,0.0,True,incomplete_BLS_2015_2019;missing_BEA_GDP_endpoints
+02066,"Copper River Census Area, Alaska",02066,direct,0.0,True,incomplete_BLS_2015_2019;missing_BEA_GDP_endpoints
+09110,"Capitol Planning Region, Connecticut",09110,direct,5.0,True,missing_BEA_GDP_endpoints
+09120,"Greater Bridgeport Planning Region, Connecticut",09120,direct,5.0,True,missing_BEA_GDP_endpoints
+09130,"Lower Connecticut River Valley Planning Region, Connecticut",09130,direct,5.0,True,missing_BEA_GDP_endpoints
+09140,"Naugatuck Valley Planning Region, Connecticut",09140,direct,5.0,True,missing_BEA_GDP_endpoints
+09150,"Northeastern Connecticut Planning Region, Connecticut",09150,direct,5.0,True,missing_BEA_GDP_endpoints
+09160,"Northwest Hills Planning Region, Connecticut",09160,direct,5.0,True,missing_BEA_GDP_endpoints
+09170,"South Central Connecticut Planning Region, Connecticut",09170,direct,5.0,True,missing_BEA_GDP_endpoints
+09180,"Southeastern Connecticut Planning Region, Connecticut",09180,direct,5.0,True,missing_BEA_GDP_endpoints
+09190,"Western Connecticut Planning Region, Connecticut",09190,direct,5.0,True,missing_BEA_GDP_endpoints
+51003,"Albemarle County, Virginia",51901,combined_unit,5.0,,combined_BEA_geography
+51005,"Alleghany County, Virginia",51903,combined_unit,5.0,,combined_BEA_geography
+51015,"Augusta County, Virginia",51907,combined_unit,5.0,,combined_BEA_geography
+51031,"Campbell County, Virginia",51911,combined_unit,5.0,,combined_BEA_geography
+51035,"Carroll County, Virginia",51913,combined_unit,5.0,,combined_BEA_geography
+51053,"Dinwiddie County, Virginia",51918,combined_unit,5.0,,combined_BEA_geography
+51059,"Fairfax County, Virginia",51919,combined_unit,5.0,,combined_BEA_geography
+51069,"Frederick County, Virginia",51921,combined_unit,5.0,,combined_BEA_geography
+51081,"Greensville County, Virginia",51923,combined_unit,5.0,,combined_BEA_geography
+51089,"Henry County, Virginia",51929,combined_unit,5.0,,combined_BEA_geography
+51095,"James City County, Virginia",51931,combined_unit,5.0,,combined_BEA_geography
+51121,"Montgomery County, Virginia",51933,combined_unit,5.0,,combined_BEA_geography
+51143,"Pittsylvania County, Virginia",51939,combined_unit,5.0,,combined_BEA_geography
+51149,"Prince George County, Virginia",51941,combined_unit,5.0,,combined_BEA_geography
+51153,"Prince William County, Virginia",51942,combined_unit,5.0,,combined_BEA_geography
+51161,"Roanoke County, Virginia",51944,combined_unit,5.0,,combined_BEA_geography
+51163,"Rockbridge County, Virginia",51945,combined_unit,5.0,,combined_BEA_geography
+51165,"Rockingham County, Virginia",51947,combined_unit,5.0,,combined_BEA_geography
+51175,"Southampton County, Virginia",51949,combined_unit,5.0,,combined_BEA_geography
+51177,"Spotsylvania County, Virginia",51951,combined_unit,5.0,,combined_BEA_geography
+51191,"Washington County, Virginia",51953,combined_unit,5.0,,combined_BEA_geography
+51195,"Wise County, Virginia",51955,combined_unit,5.0,,combined_BEA_geography
+51199,"York County, Virginia",51958,combined_unit,5.0,,combined_BEA_geography
+51520,"Bristol city, Virginia",51953,combined_unit,5.0,,combined_BEA_geography
+51530,"Buena Vista city, Virginia",51945,combined_unit,5.0,,combined_BEA_geography
+51540,"Charlottesville city, Virginia",51901,combined_unit,5.0,,combined_BEA_geography
+51570,"Colonial Heights city, Virginia",51918,combined_unit,5.0,,combined_BEA_geography
+51580,"Covington city, Virginia",51903,combined_unit,5.0,,combined_BEA_geography
+51590,"Danville city, Virginia",51939,combined_unit,5.0,,combined_BEA_geography
+51595,"Emporia city, Virginia",51923,combined_unit,5.0,,combined_BEA_geography
+51600,"Fairfax city, Virginia",51919,combined_unit,5.0,,combined_BEA_geography
+51610,"Falls Church city, Virginia",51919,combined_unit,5.0,,combined_BEA_geography
+51620,"Franklin city, Virginia",51949,combined_unit,5.0,,combined_BEA_geography
+51630,"Fredericksburg city, Virginia",51951,combined_unit,5.0,,combined_BEA_geography
+51640,"Galax city, Virginia",51913,combined_unit,5.0,,combined_BEA_geography
+51660,"Harrisonburg city, Virginia",51947,combined_unit,5.0,,combined_BEA_geography
+51670,"Hopewell city, Virginia",51941,combined_unit,5.0,,combined_BEA_geography
+51678,"Lexington city, Virginia",51945,combined_unit,5.0,,combined_BEA_geography
+51680,"Lynchburg city, Virginia",51911,combined_unit,5.0,,combined_BEA_geography
+51683,"Manassas city, Virginia",51942,combined_unit,5.0,,combined_BEA_geography
+51685,"Manassas Park city, Virginia",51942,combined_unit,5.0,,combined_BEA_geography
+51690,"Martinsville city, Virginia",51929,combined_unit,5.0,,combined_BEA_geography
+51720,"Norton city, Virginia",51955,combined_unit,5.0,,combined_BEA_geography
+51730,"Petersburg city, Virginia",51918,combined_unit,5.0,,combined_BEA_geography
+51735,"Poquoson city, Virginia",51958,combined_unit,5.0,,combined_BEA_geography
+51750,"Radford city, Virginia",51933,combined_unit,5.0,,combined_BEA_geography
+51775,"Salem city, Virginia",51944,combined_unit,5.0,,combined_BEA_geography
+51790,"Staunton city, Virginia",51907,combined_unit,5.0,,combined_BEA_geography
+51820,"Waynesboro city, Virginia",51907,combined_unit,5.0,,combined_BEA_geography
+51830,"Williamsburg city, Virginia",51931,combined_unit,5.0,,combined_BEA_geography
+51840,"Winchester city, Virginia",51921,combined_unit,5.0,,combined_BEA_geography
+15009,"Maui County, Hawaii",15901,combined_unit,5.0,,combined_BEA_geography
+15005,"Kalawao County, Hawaii",15901,combined_unit,,,combined_BEA_geography;incomplete_BLS_2015_2019
