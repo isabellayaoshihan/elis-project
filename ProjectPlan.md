@@ -8,8 +8,7 @@ We use three public datasets from federal agencies. The Census Bureau's American
 For each dataset, we download the data with a script, verify it with a SHA-256 checksum, assess its accuracy, completeness, timeliness, and consistency, and clean the problems we find without changing the raw file. We then review counties whose boundaries or codes differ across the three agencies, join the cleaned tables into one row per county, and assess the joined table again before analysis. A single workflow file will run all of these steps in order so that anyone can reproduce our results.
 
 ## Team
-| Member | Role | Planned responsibilities |
-|---|---|---|---|
+| Member | GitHub | Role | Responsibilities |
 | Isabella Yao | @isabellayaoshihan | Data Acquisition Lead | ACS and BLS acquisition scripts with SHA-256 checksums; repository folder structure; BLS quality assessment and cleaning |
 | Eric Shi | @HongyouEric | Data Integration Lead | ACS quality assessment and cleaning; county geography review; joining the three cleaned datasets; licenses and references |
 | Susu Tran | @susutran | Analysis and Documentation Lead | BEA acquisition, quality assessment, and cleaning; BEA to county crosswalk; analysis and visualization; data dictionary and metadata |
@@ -177,10 +176,10 @@ Status as of November 11, 2026.
 | 5 | Ethics and licensing review | Document license and terms of use for every source | Susu Tran | Oct 12 | Completed | M3 |
 | 6 | Pre-integration quality assessment | One assessment script per source covering accuracy, completeness, timeliness, and consistency; reports in `quality_assessment/`.<br>**ACS:** Eric Shi<br>**LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M10 |
 | 7 | Data cleaning | One cleaning script per source, separate from the assessment script; cleaned tables in `data/processed/`, raw files unchanged.<br>**ACS:** Eric Shi<br>**LAUS:** Isabella Yao<br>**BEA:** Susu Tran | Eric Shi, Isabella Yao, Susu Tran | Nov 6 | Completed | M11, M12 |
-| 8 | Data integration | Review counties whose geography differs across sources; summarize LAUS and BEA to 2015 to 2019 measures; join the three tables on county FIPS. First joined table and geography review completed Nov 8; integration script still to be committed. | Eric Shi | Nov 12 | Completed | M7, M8 |
+| 8 | Data integration | Review counties whose geography differs across sources; summarize LAUS and BEA to 2015 to 2019 measures; join the three tables on county FIPS; verify the outputs against the raw data | Eric Shi | Nov 12 | Completed | M7, M8 |
 | 9 | Post-integration quality assessment | Assess the joined table for accuracy, completeness, timeliness, and consistency | Lyric Li | Nov 17 | In progress | M10 |
-| 10 | Plan revision | Revise ProjectPlan.md based on Milestone 2 feedback | Lyric Li | Nov 11 | Completed | |
-| 11 | Status report | StatusReport.md with each member's own contribution summary; publish the status-report release | All | Nov 19 | Not started | |
+| 10 | Plan revision | Revise ProjectPlan.md based on Milestone 2 feedback | Lyric Li | Nov 12 | Completed | |
+| 11 | Status report | StatusReport.md with each member's own contribution summary; publish the status-report release | All | Nov 19 | In progress | |
 | 12 | Workflow automation | Snakemake or run-all script that calls each step's script in order, from acquisition to analysis | Lyric Li | Nov 26 | Not started | M13 |
 | 13 | Analysis and visualization | Answer RQ1 to RQ3 with at least one visualization | Susu Tran | Nov 30 | Not started | |
 | 14 | Environment and dependencies | `requirements.txt`, `pip freeze` output, relative paths throughout | Lyric Li | Dec 1 | Not started | M14 |
