@@ -145,7 +145,7 @@ We rewrote the Overview, Team, Storage and Organization, and Timeline sections. 
 ## 5. Individual Contributions
 
 ### Isabella Yao
-I revised the Datasets section of the project plan to clarify the data sources, time coverage, variables, and geographic identifiers used for integration. I conducted the pre-integration data quality assessment of the BLS LAUS dataset, identifying issues related to missing values, county FIPS codes, and data completeness. Based on the assessment results, I developed the BLS cleaning script to restructure the raw data into county-year records, exclude Puerto Rico, and handle missing observations.
+I revised the Datasets section of the [project plan](https://github.com/isabellayaoshihan/elis-project/blob/main/ProjectPlan.md) to clarify the data sources, time coverage, variables, and geographic identifiers used for integration. I conducted the pre-integration data quality assessment of the BLS LAUS dataset ([assessment script](https://github.com/isabellayaoshihan/elis-project/blob/main/scripts/bls_quality_assessment.py), [quality report](https://github.com/isabellayaoshihan/elis-project/blob/main/quality_assessment/bls_quality_report.txt)), identifying issues related to missing values, county FIPS codes, and data completeness. Based on the assessment results, I developed the [BLS cleaning script](https://github.com/isabellayaoshihan/elis-project/blob/main/scripts/bls_clean.py) to restructure the raw data into county-year records, exclude Puerto Rico, and handle missing observations, producing the [cleaned BLS dataset](https://github.com/isabellayaoshihan/elis-project/blob/main/data/processed/bls_laus_clean.csv).
 
 ### Eric Shi
 
