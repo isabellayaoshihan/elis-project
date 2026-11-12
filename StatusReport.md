@@ -145,6 +145,7 @@ We rewrote the Overview, Team, Storage and Organization, and Timeline sections. 
 ## 5. Individual Contributions
 
 ### Isabella Yao
+I revised the Datasets section of the project plan to clarify the data sources, time coverage, variables, and geographic identifiers used for integration. I conducted the pre-integration data quality assessment of the BLS LAUS dataset, identifying issues related to missing values, county FIPS codes, and data completeness. Based on the assessment results, I developed the BLS cleaning script to restructure the raw data into county-year records, exclude Puerto Rico, and handle missing observations.
 
 ### Eric Shi
 
