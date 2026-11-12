@@ -1,0 +1,26 @@
+{
+  "source_commit": "7d484d8db11254bec6f2fc85e5d6b2194ccf07e8",
+  "input_sha256": {
+    "data/raw/acs_2024_county_full.csv": "a1ec18a9ea7d190d54874415115e273145da399d69676bf93ad754b74a5a33b4",
+    "data/raw/acs_2024_county_full.sha256": "83b95201d72430cb6e0e3f3451223814771ebaa1055711528a00fbec410980f1",
+    "data/raw/bea_cagdp1_county.csv": "19d6fcbaa0b104c26b1b7ad346107a90afaeae2151680545e5a43f281d38c197",
+    "data/raw/bea_cagdp1_county.sha256": "8a4a2261621aa2992b528ad43f3f572cedb2fd50ada31ffa59e9cefdda9916e0",
+    "data/raw/bls_laus_2015_2024_annual.json": "df53e8ec6fa5e32cc0c138fa4a5305bb438ae2cf4486f42c2dd536eee076c26e",
+    "data/raw/bls_laus_2015_2024_annual.sha256": "5477adedcbaee6f8a6096aee045782a171799295056d9d2171c5aa46d040a6b2",
+    "data/processed/acs_2024_county_clean.csv": "0ae22c97012e2f365adf8b99d80a3dd50f614259e95ea6878a967c071992df2e",
+    "data/processed/bea_cagdp1_clean.csv": "5843377666a05599cc31a1b07c980bba6b21348c68f2d7164d01adb20142d017",
+    "data/processed/bea_fips_crosswalk.csv": "6bd9d4b04432e97bb7211690feb1203311cb78b1794191b97175d286846ab85b",
+    "data/processed/bls_laus_clean.csv": "6246e7d0f100894f3af1c6d1757674abd319224cdd652b3f9527f8a53404b94e",
+    "quality_assessment/county_geography_review.csv": "5825b7172adde24151d9d7d1dbe0a085c61291e02e90e0f6990316086b873cc6"
+  },
+  "acs_rows": 3144,
+  "bls_rows": 31430,
+  "bea_rows": 31270,
+  "screened_rows": 3080,
+  "held_out_rows": 64,
+  "reason_counts_overlap": {
+    "combined_BEA_geography": 53,
+    "missing_BEA_GDP_endpoints": 11,
+    "incomplete_BLS_2015_2019": 3
+  }
+}

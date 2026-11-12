@@ -1,0 +1,23 @@
+{
+  "result": "passed",
+  "acs_rows_checked": 3144,
+  "acs_columns_checked": 312,
+  "raw_BLS_rate_observations_checked": 15705,
+  "combined_BEA_units_checked": 24,
+  "combined_county_members_checked": 53,
+  "screened_counties": 3080,
+  "excluded_counties": 64,
+  "restored_after_geography_review": 15,
+  "checks": [
+    "Every ACS cell compared with raw data after documented MOE recoding",
+    "Every five-year rate mean recalculated from raw BLS JSON",
+    "Every GDP endpoint and CAGR checked against raw BEA CSV",
+    "Crosswalk membership, one-row-per-county joins and exclusion sets checked",
+    "Screened CSV matches the eligible subset of the audit CSV"
+  ],
+  "output_sha256": {
+    "data/integrated/county_join_audit.csv": "0dba6b62c2c5603786b577e52157969e95bf09be05364b2f61783ffd5994d6c2",
+    "data/integrated/county_screened.csv": "80de3b2e9f6bf91efab4903b4830165aa84f59144cceedfe05534547b04ad3fb",
+    "data/integrated/integration_exclusions.csv": "1a9e19243754aa9cee5e491eec5c15d26a1a3f6e027b36d75cb9fd21bd1c8055"
+  }
+}
