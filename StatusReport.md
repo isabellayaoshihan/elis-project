@@ -149,7 +149,7 @@ I reviewed and updated the Datasets section of the [project plan](ProjectPlan.md
 
 
 ### Eric Shi
-
+I assessed the ACS dataset for missing values and geographic consistency, then wrote the cleaning script to exclude Puerto Rico and recode special margin-of-error values as missing. I led the integration of ACS, BLS, and BEA data using county FIPS codes. I reviewed geographic mismatches across sources and documented the reasons for excluding 64 county-level areas. The resulting analysis table contains 3,080 county-level records.
 ### Susu Tran
 
 ### Lyric Li：
