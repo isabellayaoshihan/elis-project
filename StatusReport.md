@@ -152,6 +152,8 @@ I reviewed and updated the Datasets section of the [project plan](ProjectPlan.md
 I assessed the ACS dataset for missing values and geographic consistency, then wrote the cleaning script to exclude Puerto Rico and recode special margin-of-error values as missing. I led the integration of ACS, BLS, and BEA data using county FIPS codes. I reviewed geographic mismatches across sources and documented the reasons for excluding 64 county-level areas. The resulting analysis table contains 3,080 county-level records.
 
 ### Susu Tran
+I wrote the BEA [quality assessment](scripts\bea_quality_assessment.py)  and [cleaning scripts](scripts\bea_clean.py). The assessment found the raw county GDP data structurally clean apart from 268 zeros that actually mean “not available” and 14 Connecticut and Alaska geographies with no 2015–2019 growth. The cleaning script recodes those zeros to NA without touching the raw file and outputs a clean GDP table. I also built a FIPS crosswalk that maps BEA’s 24 combined Virginia and Hawaii units onto the 53 counties they cover, so all 3,144 ACS/BLS counties can be joined. Both steps are documented in reports that flag the integration decisions for the group.
+
 
 ### Lyric Li
 I revised the [project plan](ProjectPlan.md) in response to the Milestone 2 feedback, adding the Consistency Across Counties and Jurisdictions section, which explains the exclusion of 64 counties, and rewriting the Overview, Team, Storage, and Timeline sections for clarity. I compiled this status report, linking each task to its artifacts and showing how each cleaning step addresses an issue found in the assessment. I am now leading the post-integration quality assessment (Task 9).
